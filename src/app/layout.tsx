@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 
@@ -27,18 +28,14 @@ export default function RootLayout({
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
           <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-            <Link href="/" className="text-xl font-bold tracking-tight">
+            <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
+              <Image src="/icon.png" alt="MarketPulse" width={28} height={28} className="rounded" />
               MarketPulse
             </Link>
             <ul className="flex items-center gap-6 text-sm font-medium text-slate-300">
               <li>
                 <Link href="/market" className="hover:text-white transition-colors">
-                  Market
-                </Link>
-              </li>
-              <li>
-                <Link href="/signals" className="hover:text-white transition-colors">
-                  Signals
+                  Market Signals
                 </Link>
               </li>
               <li>
@@ -51,7 +48,7 @@ export default function RootLayout({
                   href={discordUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-md bg-[#00c853] px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-[#00e676] transition-colors"
+                  className="rounded-md bg-[#5865F2] px-4 py-2 text-sm font-semibold text-white hover:bg-[#4752C4] transition-colors"
                 >
                   Join
                 </a>
