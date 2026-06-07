@@ -68,7 +68,7 @@ const tiers = [
 ];
 
 export default function Home() {
-  const discordUrl = process.env.DISCORD_INVITE_URL || "#";
+  const discordUrl = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || process.env.DISCORD_INVITE_URL || "#";
 
   return (
     <div className="bg-slate-950">
@@ -172,18 +172,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Social Proof / Testimonial Placeholder */}
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
-          <blockquote className="mx-auto max-w-2xl text-lg italic text-slate-300">
-            "MarketPulse changed how I approach swing trading. The morning
-            digest alone saves me an hour of research every day."
-          </blockquote>
-          <p className="mt-4 text-sm text-slate-500">
-            — Community Member (testimonial placeholder)
-          </p>
-        </div>
-      </section>
     </div>
   );
 }

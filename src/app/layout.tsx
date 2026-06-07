@@ -20,7 +20,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const discordUrl = process.env.DISCORD_INVITE_URL || "#";
+  const discordUrl = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || process.env.DISCORD_INVITE_URL || "#";
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
