@@ -1,65 +1,198 @@
-import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "MarketPulse — Market Intelligence for Swing Traders",
+  description:
+    "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+  openGraph: {
+    title: "MarketPulse — Market Intelligence for Swing Traders",
+    description:
+      "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+    images: [{ url: "/og-image.png" }],
+  },
+};
+
+const features = [
+  {
+    title: "Daily Signals + Charts",
+    description:
+      "Multi-strategy scan across 100+ tickers with entry, stop, and target levels. Full chart images posted to Discord.",
+  },
+  {
+    title: "Morning Intelligence Digest",
+    description:
+      "Pre-market briefing with market mood, VIX regime, sector breadth, and exposure guidance.",
+  },
+  {
+    title: "AI Assistant Bot",
+    description:
+      "Ask questions about any ticker, strategy, or market condition. Get answers grounded in live data.",
+  },
+  {
+    title: "Member Trade Journal",
+    description:
+      "Log paper trades with /trade-add. Track P&L, R:R ratios, and win rates transparently.",
+  },
+];
+
+const tiers = [
+  {
+    name: "Free",
+    price: "$0",
+    period: "forever",
+    features: [
+      "Community access",
+      "Delayed signals (1 week)",
+      "Educational content",
+      "Market mood dashboard",
+    ],
+    cta: "Join Free",
+    highlighted: false,
+  },
+  {
+    name: "Intelligence",
+    price: "$49",
+    period: "/mo",
+    features: [
+      "Everything in Free",
+      "Real-time signals",
+      "Morning digest",
+      "Signal charts",
+      "Full archive",
+    ],
+    cta: "Get Intelligence",
+    highlighted: true,
+  },
+  {
+    name: "Trader",
+    price: "$79",
+    period: "/mo",
+    features: [
+      "Everything in Intelligence",
+      "AI assistant",
+      "Trade journal",
+      "Parameter tuning alerts",
+      "Priority support",
+    ],
+    cta: "Go Trader",
+    highlighted: false,
+  },
+];
 
 export default function Home() {
+  const discordUrl = process.env.DISCORD_INVITE_URL || "#";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="bg-slate-950">
+      {/* Hero Section */}
+      <section className="relative mx-auto max-w-7xl px-6 pt-20 pb-24 text-center sm:pt-32 sm:pb-32">
+        <h1 className="mx-auto max-w-4xl text-4xl font-bold tracking-tight text-white sm:text-6xl">
+          Market Intelligence for Swing Traders
+        </h1>
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-400">
+          Daily signals, regime detection, and AI-powered analysis — all
+          delivered to Discord before market open.
+        </p>
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <a
+            href={discordUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center rounded-lg bg-[#00c853] px-8 py-4 text-lg font-semibold text-slate-950 shadow-lg shadow-[#00c853]/20 hover:bg-[#00e676] transition-colors"
+          >
+            Join the Community
+          </a>
+          <p className="text-sm text-slate-500">
+            Free tier available · No credit card required
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Features Section */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature) => (
+            <div
+              key={feature.title}
+              className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition-colors hover:border-slate-700"
+            >
+              <h3 className="text-lg font-semibold text-white">
+                {feature.title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                {feature.description}
+              </p>
+            </div>
+          ))}
         </div>
-      </main>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <h2 className="text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Simple, Transparent Pricing
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
+          Start free. Upgrade when you're ready for real-time edge.
+        </p>
+
+        <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {tiers.map((tier) => (
+            <div
+              key={tier.name}
+              className={`rounded-xl border p-8 flex flex-col ${
+                tier.highlighted
+                  ? "border-[#00c853] bg-slate-900 ring-1 ring-[#00c853]/30"
+                  : "border-slate-800 bg-slate-900"
+              }`}
+            >
+              <h3 className="text-lg font-semibold text-white">{tier.name}</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-white">
+                  {tier.price}
+                </span>
+                <span className="text-sm text-slate-400">{tier.period}</span>
+              </div>
+              <ul className="mt-6 flex-1 space-y-3">
+                {tier.features.map((feature) => (
+                  <li
+                    key={feature}
+                    className="flex items-start gap-2 text-sm text-slate-300"
+                  >
+                    <span className="mt-0.5 text-[#00c853]">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={discordUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`mt-8 block w-full rounded-lg py-3 text-center text-sm font-semibold transition-colors ${
+                  tier.highlighted
+                    ? "bg-[#00c853] text-slate-950 hover:bg-[#00e676]"
+                    : "border border-slate-700 text-white hover:bg-slate-800"
+                }`}
+              >
+                {tier.cta}
+              </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Social Proof / Testimonial Placeholder */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
+          <blockquote className="mx-auto max-w-2xl text-lg italic text-slate-300">
+            "MarketPulse changed how I approach swing trading. The morning
+            digest alone saves me an hour of research every day."
+          </blockquote>
+          <p className="mt-4 text-sm text-slate-500">
+            — Community Member (testimonial placeholder)
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
