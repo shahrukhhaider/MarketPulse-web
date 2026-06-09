@@ -5,9 +5,15 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Learn — MarketPulse",
+  title: "Learn to Trade | PaperEdge",
   description:
     "Educational articles on swing trading concepts, market regimes, and signal interpretation.",
+  openGraph: {
+    siteName: "PaperEdge",
+    title: "Learn to Trade | PaperEdge",
+    description:
+      "Educational articles on swing trading concepts, market regimes, and signal interpretation.",
+  },
 };
 
 interface ArticleMeta {
@@ -41,7 +47,7 @@ export default function LearnPage() {
       <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Learn</h1>
       <p className="mt-3 text-slate-400 max-w-2xl">
         Educational guides on swing trading concepts, market regime analysis, and
-        how to interpret MarketPulse signals.
+        how to interpret PaperEdge signals.
       </p>
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2">

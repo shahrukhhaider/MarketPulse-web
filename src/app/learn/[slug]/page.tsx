@@ -41,11 +41,16 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = getArticleBySlug(slug);
   if (!article) {
-    return { title: "Article Not Found — MarketPulse" };
+    return { title: "Article Not Found — PaperEdge" };
   }
   return {
-    title: `${article.frontmatter.title} — MarketPulse`,
+    title: `${article.frontmatter.title} — PaperEdge`,
     description: article.frontmatter.description,
+    openGraph: {
+      siteName: "PaperEdge",
+      title: `${article.frontmatter.title} — PaperEdge`,
+      description: article.frontmatter.description,
+    },
   };
 }
 

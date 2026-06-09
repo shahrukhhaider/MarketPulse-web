@@ -10,9 +10,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MarketPulse — Market Intelligence for Swing Traders",
+  title: "PaperEdge — Market Intelligence for Swing Traders",
   description:
     "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+  openGraph: {
+    siteName: "PaperEdge",
+    title: "PaperEdge — Market Intelligence for Swing Traders",
+    description:
+      "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+  },
 };
 
 export default function RootLayout({
@@ -29,8 +35,8 @@ export default function RootLayout({
         <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
           <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
             <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight">
-              <Image src="/icon.png" alt="MarketPulse" width={28} height={28} className="rounded" />
-              MarketPulse
+              <Image src="/icon.png" alt="PaperEdge" width={28} height={28} className="rounded" />
+              PaperEdge
             </Link>
             <ul className="flex items-center gap-6 text-sm font-medium text-slate-300">
               <li>
@@ -63,7 +69,7 @@ export default function RootLayout({
         {/* Footer */}
         <footer className="border-t border-slate-800 bg-slate-950">
           <div className="mx-auto max-w-7xl px-6 py-8 text-center text-sm text-slate-500">
-            © {new Date().getFullYear()} MarketPulse. All rights reserved.
+            © 2026 PaperEdge
           </div>
         </footer>
       </body>

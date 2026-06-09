@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "MarketPulse — Market Intelligence for Swing Traders",
+  title: "PaperEdge — Learn to Trade with Real Signals",
   description:
     "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
   openGraph: {
-    title: "MarketPulse — Market Intelligence for Swing Traders",
+    siteName: "PaperEdge",
+    title: "PaperEdge — Learn to Trade with Real Signals",
     description:
       "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
     images: [{ url: "/og-image.png" }],
@@ -47,13 +49,14 @@ const tiers = [
       "Market mood dashboard",
       "Trade journal",
     ],
-    cta: "Join Free",
+    cta: "Join Free — Beta Access",
     highlighted: false,
   },
   {
     name: "Intelligence",
     price: "$49",
     period: "/mo",
+    note: "Launching after beta · $49/mo",
     features: [
       "Everything in Free",
       "Real-time signals",
@@ -118,6 +121,87 @@ export default function Home() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <h2 className="text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          How it works
+        </h2>
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: "🚀",
+              title: "Join free",
+              description:
+                "Create a Discord account and join the PaperEdge community. No credit card, no brokerage account required.",
+            },
+            {
+              icon: "📊",
+              title: "Watch real signals",
+              description:
+                "Follow daily signals across 100+ tickers — entry, stop, target, and annotated charts posted after market close.",
+            },
+            {
+              icon: "📓",
+              title: "Paper trade with the journal",
+              description:
+                "Log paper trades with `/trade add`. Track your P&L, win rate, and open positions as you build confidence.",
+            },
+            {
+              icon: "🤖",
+              title: "Go deeper with AI",
+              description:
+                "Ask the AI assistant why a signal triggered, what the market regime means, or how to size a position. Upgrade to Trader for full access.",
+            },
+          ].map((step, index) => (
+            <div
+              key={step.title}
+              className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center"
+            >
+              <div className="text-4xl">{step.icon}</div>
+              <h3 className="mt-4 text-lg font-bold text-white">
+                Step {index + 1} — {step.title}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-12 flex flex-col items-center gap-4">
+          <p className="text-lg text-slate-400">Ready to start?</p>
+          <a
+            href={discordUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#5865F2] px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-[#5865F2]/20 hover:bg-[#4752C4] transition-colors"
+          >
+            Join the Community →
+          </a>
+        </div>
+      </section>
+
+      {/* Image Showcase Section */}
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <h2 className="text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          What members see every day
+        </h2>
+        <div className="mt-12 flex flex-col items-center">
+          <div className="overflow-hidden rounded-xl border border-slate-800 shadow-2xl shadow-black/40">
+            <Image
+              src="/signal-card-preview.png"
+              alt="Example Discord signal card showing entry, stop, target, and annotated chart"
+              width={800}
+              height={600}
+              className="block"
+            />
+          </div>
+          <p className="mt-6 max-w-2xl text-center text-sm leading-6 text-slate-400">
+            Daily signals posted to Discord after market close — entry, stop, target, and annotated chart included
+          </p>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section className="mx-auto max-w-7xl px-6 py-20">
         <h2 className="text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -125,6 +209,9 @@ export default function Home() {
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
           Start free. Upgrade when you're ready for real-time edge.
+        </p>
+        <p className="mx-auto mt-3 max-w-2xl text-center text-sm italic text-slate-500">
+          All features free during beta. Trader plan launches at $49/mo when we exit beta.
         </p>
 
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 max-w-3xl mx-auto">
@@ -137,13 +224,23 @@ export default function Home() {
                   : "border-slate-800 bg-slate-900"
               }`}
             >
-              <h3 className="text-lg font-semibold text-white">{tier.name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-white">{tier.name}</h3>
+                {tier.name === "Free" && (
+                  <span className="inline-flex items-center rounded-full bg-[#5865F2]/20 px-2.5 py-0.5 text-xs font-medium text-[#5865F2] ring-1 ring-inset ring-[#5865F2]/30">
+                    Beta
+                  </span>
+                )}
+              </div>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-white">
                   {tier.price}
                 </span>
                 <span className="text-sm text-slate-400">{tier.period}</span>
               </div>
+              {tier.note && (
+                <p className="mt-2 text-xs text-slate-400">{tier.note}</p>
+              )}
               <ul className="mt-6 flex-1 space-y-3">
                 {tier.features.map((feature) => (
                   <li
