@@ -4,6 +4,8 @@ import matter from "gray-matter";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
 import Link from "next/link";
+import remarkGfm from "remark-gfm";
+import { CandlestickDiagram } from "../components/CandlestickDiagram";
 
 const contentDir = path.join(process.cwd(), "content", "learn");
 
@@ -106,7 +108,11 @@ export default async function ArticlePage({
 
       {/* Article content */}
       <article className="prose-custom mt-12">
-        <MDXRemote source={content} />
+        <MDXRemote
+          source={content}
+          components={{ CandlestickDiagram }}
+          options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+        />
       </article>
     </section>
   );

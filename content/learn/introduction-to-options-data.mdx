@@ -1,0 +1,121 @@
+---
+title: "Introduction to Options Data — What the Market Is Betting On"
+description: "Learn how to read options data like open interest, implied volatility, and the put/call ratio to understand what institutional money expects next."
+date: "2025-01-20"
+slug: "introduction-to-options-data"
+readTime: "~8 min"
+seriesOrder: 4
+---
+
+## A Strange Question
+
+Imagine you could see every bet placed on a stock — not just who bought or sold shares, but who is *paying money right now* for the right to buy or sell at a specific price by a specific date.
+
+What would that tell you?
+
+It would tell you what the market *expects*. Not what happened yesterday — what people with real money on the line think will happen next.
+
+That's exactly what options data gives you. And you don't need to trade options to use it.
+
+## What Is an Option, Really?
+
+Strip away the jargon. An option is simply a contract that gives you a right — not an obligation.
+
+**A call option** gives you the right to *buy* a stock at a set price before a set date. You'd buy one if you think the stock is going up.
+
+**A put option** gives you the right to *sell* a stock at a set price before a set date. You'd buy one if you think the stock is going down.
+
+That set price is the **strike price**. That set date is the **expiration**.
+
+Think of it like a deposit on a house. You pay a small amount today for the *right* to buy at an agreed price later. If the market moves in your favor, you exercise that right. If not, you walk away and lose only the deposit.
+
+Why does this matter to you as a stock observer? Because the *prices people pay* for these contracts — and *where they cluster* — reveal collective expectations.
+
+## Open Interest — Where the Bets Pile Up
+
+Open interest is the total number of outstanding contracts at a given strike price. Not today's volume — the *total* that still exist and haven't been closed.
+
+Why care? Because high open interest at a specific strike tells you: "A lot of money is committed to this level." These levels often act as magnets or barriers for the stock price.
+
+Think about it from a market-maker's perspective. If thousands of call contracts exist at the $150 strike, the institutions who sold those calls need to hedge. Their hedging activity *itself* influences where the stock moves. High open interest doesn't just predict — it attracts.
+
+## Implied Volatility — The Price of Uncertainty
+
+Here's a question: if two options have the same strike price and expiration, but one costs twice as much — why?
+
+The answer is **implied volatility (IV)**. It's the market's forecast of how much the stock might move. Higher IV means the market expects bigger swings, so options cost more.
+
+IV is priced in percentages. An IV of 30% means the market expects the stock to move roughly 30% over the next year (annualized). You can approximate the expected monthly move by dividing by the square root of 12.
+
+### IV Crush — The Earnings Trap
+
+Before an earnings announcement, uncertainty is high. Nobody knows what the company will report. So IV spikes — options become expensive because big moves are expected.
+
+Then earnings happen. Uncertainty disappears. IV collapses overnight. This is **IV crush**.
+
+Here's the trap: even if you correctly predict the direction of an earnings move, you can still lose money on options because the drop in IV destroys the option's value faster than the directional move adds to it.
+
+For stock traders, IV crush is a signal. When IV is elevated, the market expects a big move. When IV is low, the market expects calm. This context helps you size positions and time entries. (You'll see this concept expanded in our discussion of [VIX](/learn/what-is-vix-explained) — the market-wide version of implied volatility.)
+
+## The Put/Call Ratio — Measuring Fear
+
+The put/call ratio divides the number of puts traded by the number of calls traded.
+
+- **Ratio above 1.0**: More puts than calls. The crowd is bearish or hedging heavily.
+- **Ratio below 0.7**: More calls than puts. The crowd is bullish — possibly excessively so.
+- **Ratio near 0.8-0.9**: Normal range. No extreme positioning.
+
+Here's where human behavior makes this interesting. Extreme readings often signal the opposite of what the crowd expects. When *everyone* is buying puts (fear is maximal), markets often bottom. When *everyone* is buying calls (greed is maximal), markets often top.
+
+This isn't contrarianism for its own sake. It's supply and demand. When everyone who wants to sell has already bought puts, who's left to push prices lower?
+
+## Reading an Options Chain
+
+An options chain displays all available contracts for a stock, organized by:
+
+- **Expiration date** (across the top or as tabs)
+- **Strike price** (vertical axis)
+- **Calls on one side, puts on the other**
+
+For each contract you'll see: last price, bid/ask, volume (today's trades), open interest (total outstanding), and implied volatility.
+
+What to look for:
+
+1. **Where is open interest highest?** These are key levels the market cares about.
+2. **Is IV elevated or depressed relative to its recent range?** This tells you if options are "expensive" or "cheap."
+3. **Is volume concentrated in calls or puts?** This shows today's directional bias.
+
+## Unusual Options Activity — Following Institutional Money
+
+Most retail traders buy small numbers of contracts. When you see 10,000 contracts trade at a single strike in minutes — that's not retail. That's institutional money making a large, deliberate bet.
+
+Unusual options activity (UOA) flags these moments. Look for:
+
+- Volume far exceeding open interest (new positions being opened, not old ones closing)
+- Large block trades (single transactions of hundreds or thousands of contracts)
+- Activity in out-of-the-money strikes (someone betting on a big move)
+- Concentration near specific expirations (timing a catalyst)
+
+This isn't a crystal ball. Institutions can be wrong. But when large capital commits to a specific price and timeframe, it's worth paying attention. They've done analysis you haven't.
+
+## Try It Yourself
+
+Find the options chain for a major stock — AAPL, MSFT, or NVDA work well. Most brokers show this for free, or use Yahoo Finance or Nasdaq.com.
+
+Look at the nearest expiration date. Scan the strikes:
+
+**Which strike has the highest open interest?**
+
+Now ask yourself: is that strike above or below the current price? What does that tell you about where market participants expect the stock to be at expiration?
+
+## What's Next
+
+Options data is one layer of market intelligence. It tells you what participants *expect*. But there's a broader measure of fear and uncertainty that encompasses the entire market — not just one stock.
+
+That measure is VIX. And understanding it changes how you think about risk.
+
+---
+
+PaperEdge tracks unusual options activity and volatility shifts automatically — join free to follow along.
+
+**Next:** [What Is VIX and Why It Matters](/learn/what-is-vix-explained) →
