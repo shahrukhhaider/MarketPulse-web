@@ -70,7 +70,16 @@ export default function RootLayout({
         <footer className="border-t border-slate-800 bg-slate-950">
           <div className="mx-auto max-w-7xl px-6 py-8 text-center text-sm text-slate-500">
             <p>© 2026 PaperEdge</p>
-            <p className="mt-2 text-xs italic text-slate-600">
+            <div className="mt-3 flex items-center justify-center gap-4 text-xs text-slate-400">
+              <Link href="/privacy" className="hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+              <span className="text-slate-700">·</span>
+              <Link href="/terms" className="hover:text-white transition-colors">
+                Terms of Service
+              </Link>
+            </div>
+            <p className="mt-3 text-xs italic text-slate-600">
               Content is for informational purposes only and does not constitute financial, investment, or trading advice. Always do your own research.
             </p>
           </div>
