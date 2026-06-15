@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
@@ -67,6 +68,7 @@ export default function RootLayout({
         {/* Main Content */}
         <main className="flex-1">{children}</main>
         <Analytics />
+        <SpeedInsights />
 
         {/* Footer */}
         <footer className="border-t border-slate-800 bg-slate-950">
