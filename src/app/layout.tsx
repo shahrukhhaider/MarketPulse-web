@@ -14,12 +14,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "PaperEdge — Market Intelligence for Swing Traders",
   description:
-    "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+    "Daily swing trade signals, market regime detection, and transparent trade tracking. Join the community for free.",
   openGraph: {
     siteName: "PaperEdge",
     title: "PaperEdge — Market Intelligence for Swing Traders",
     description:
-      "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+      "Daily swing trade signals, market regime detection, and transparent trade tracking. Join the community for free.",
   },
 };
 

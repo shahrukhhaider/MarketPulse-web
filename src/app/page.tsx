@@ -4,12 +4,12 @@ import Image from "next/image";
 export const metadata: Metadata = {
   title: "PaperEdge — Learn to Trade with Real Signals",
   description:
-    "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+    "Discover swing trading opportunities, paper trade them, and track outcomes before risking real capital. Join the community for free.",
   openGraph: {
     siteName: "PaperEdge",
     title: "PaperEdge — Learn to Trade with Real Signals",
     description:
-      "Daily swing trade signals, market regime detection, and AI-powered intelligence. Join the community for free.",
+      "Discover swing trading opportunities, paper trade them, and track outcomes before risking real capital. Join the community for free.",
     images: [{ url: "/og-image.png" }],
   },
 };
@@ -26,14 +26,14 @@ const features = [
       "Pre-market briefing with market mood, VIX regime, sector breadth, and exposure guidance.",
   },
   {
+    title: "Trade History & Outcomes",
+    description:
+      "Log paper trades with /trade-add. Track P&L, R:R ratios, and win rates transparently.",
+  },
+  {
     title: "AI Assistant Bot",
     description:
       "Ask questions about any ticker, strategy, or market condition. Get answers grounded in live data.",
-  },
-  {
-    title: "Member Trade Journal",
-    description:
-      "Log paper trades with /trade-add. Track P&L, R:R ratios, and win rates transparently.",
   },
 ];
 
@@ -41,10 +41,10 @@ const tiers = [
   {
     name: "Free",
     price: "$0",
-    period: "forever",
+    period: "during beta",
     features: [
       "Community access",
-      "Delayed signals (1 week)",
+      "Real-time signals",
       "Educational content",
       "Market mood dashboard",
       "Trade journal",
@@ -81,8 +81,8 @@ export default function Home() {
           Market Intelligence for Swing Traders
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-400">
-          Daily signals, regime detection, and AI-powered analysis — all
-          delivered to Discord before market open.
+          Discover swing trading opportunities, paper trade them, and track
+          outcomes before risking real capital.
         </p>
         <div className="mt-10 flex flex-col items-center gap-4">
           <a
@@ -96,10 +96,28 @@ export default function Home() {
             </svg>
             Join the Discord Community
           </a>
+          <a
+            href="/market"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-slate-500 hover:text-white transition-colors"
+          >
+            View Signal Archive →
+          </a>
           <p className="text-sm text-slate-500">
             Free tier available · No credit card required
           </p>
         </div>
+      </section>
+
+      {/* Why PaperEdge Section */}
+      <section className="mx-auto max-w-3xl px-6 py-16 text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          Why PaperEdge?
+        </h2>
+        <p className="mt-6 text-lg leading-8 text-slate-400">
+          Most trading communities ask you to trust their picks. PaperEdge
+          helps you discover opportunities, paper trade them, and track results
+          transparently. Build confidence through evidence, not hype.
+        </p>
       </section>
 
       {/* Features Section */}
@@ -211,7 +229,7 @@ export default function Home() {
           Start free. Upgrade when you're ready for real-time edge.
         </p>
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm italic text-slate-500">
-          All features free during beta. Trader plan launches at $49/mo when we exit beta.
+          All features free during beta. Early users influence the product roadmap. Trader plan launches at $49/mo when we exit beta.
         </p>
 
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 max-w-3xl mx-auto">
