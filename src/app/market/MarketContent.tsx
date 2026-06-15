@@ -20,23 +20,22 @@ interface MarketData {
   timestamp: string;
 }
 
-interface ActiveSignal {
+interface WinningTrade {
   ticker: string;
   strategy: string;
-  entry: number;
-  stop: number;
-  target: number;
-  confidence: number;
-  rs_rating: number;
-  rationale: string[];
-  rvol: number;
-  currentPrice: number | null;
-  pnlPct: number | null;
+  entryDate: string;
+  entryPrice: number;
+  stopPrice: number;
+  targetPrice: number;
+  currentPrice: number;
+  pnlPercent: number;
+  chartFilename: string | null;
 }
 
-interface SignalEntry {
+interface WinningTradesManifest {
   date: string;
-  active: ActiveSignal[];
+  generatedAt: string;
+  trades: WinningTrade[];
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +69,15 @@ function formatTimestamp(timestamp: string): string {
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",
+  });
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
   });
 }
 
@@ -117,16 +125,21 @@ const DISCORD_URL = process.env.NEXT_PUBLIC_DISCORD_INVITE_URL || "#";
 
 export default function MarketContent() {
   const [data, setData] = useState<MarketData | null>(null);
-  const [signal, setSignal] = useState<SignalEntry | null>(null);
+  const [winningTrades, setWinningTrades] = useState<WinningTradesManifest | null>(null);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [tradesLoading, setTradesLoading] = useState(false);
 
+  // Initial load: market data + latest winning trades + available dates
   useEffect(() => {
     async function fetchData() {
       try {
-        const [marketRes, signalRes] = await Promise.all([
+        const [marketRes, tradesRes, datesRes] = await Promise.all([
           fetch(`${API_URL}/api/market`),
-          fetch(`${API_URL}/api/signals/week-ago`),
+          fetch(`${API_URL}/api/winning-trades`),
+          fetch(`${API_URL}/api/winning-trades/dates`),
         ]);
 
         if (marketRes.ok) {
@@ -148,10 +161,18 @@ export default function MarketContent() {
           setError(true);
         }
 
-        if (signalRes.ok) {
-          const signalData = await signalRes.json();
-          if (Array.isArray(signalData) && signalData.length > 0) {
-            setSignal(signalData[0]);
+        if (tradesRes.ok) {
+          const tradesData = await tradesRes.json();
+          if (tradesData && tradesData.trades) {
+            setWinningTrades(tradesData);
+            setSelectedDate(tradesData.date);
+          }
+        }
+
+        if (datesRes.ok) {
+          const datesData = await datesRes.json();
+          if (datesData && Array.isArray(datesData.dates)) {
+            setAvailableDates(datesData.dates);
           }
         }
       } catch {
@@ -163,6 +184,27 @@ export default function MarketContent() {
 
     fetchData();
   }, []);
+
+  // Load trades for a specific date when user selects from history
+  async function loadTradesForDate(date: string) {
+    setTradesLoading(true);
+    setSelectedDate(date);
+
+    try {
+      const [year, month, day] = date.split("-");
+      const res = await fetch(`${API_URL}/api/winning-trades/${year}/${month}/${day}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.trades) {
+          setWinningTrades(data);
+        }
+      }
+    } catch {
+      // Keep existing data on failure
+    } finally {
+      setTradesLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -192,9 +234,7 @@ export default function MarketContent() {
     );
   }
 
-  const winners = signal?.active?.filter(
-    (sig) => sig.pnlPct != null && sig.pnlPct > 0
-  ) ?? [];
+  const trades = winningTrades?.trades ?? [];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -274,98 +314,162 @@ export default function MarketContent() {
           </p>
         </section>
 
-        {/* ═══════════════════ SIGNALS SECTION ═══════════════════ */}
-        {signal && signal.active.length > 0 && (
-          <section>
-            {/* Banner */}
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-6 py-4 mb-8 text-center">
-              <p className="text-amber-200 text-sm sm:text-base">
-                📅 These signals are from{" "}
-                <span className="font-semibold">{signal.date}</span> — 7 days
-                ago. Today&apos;s live signals are available to community members.
+        {/* ═══════════════════ WINNING TRADES SECTION ═══════════════════ */}
+        <section>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold">Winning Trades</h2>
+              <p className="text-slate-400 text-sm mt-1">
+                Signals that hit their target — verified by the daily pipeline.
               </p>
-              <a
-                href={DISCORD_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-md bg-[#5865F2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#4752C4] transition-colors"
-              >
-                Get today&apos;s live signals →
-              </a>
             </div>
 
-            <h2 className="text-2xl font-bold mb-2">Winning Signals</h2>
-            <p className="text-slate-400 text-sm mb-6">
-              Last week&apos;s scans that are currently in profit.
-            </p>
-
-            {winners.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">
-                No signals currently in profit from this date.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {winners.map((sig) => {
-                  const rr =
-                    sig.entry - sig.stop !== 0
-                      ? (sig.target - sig.entry) / (sig.entry - sig.stop)
-                      : 0;
-
-                  return (
-                    <div
-                      key={`${sig.ticker}-${sig.strategy}`}
-                      className="rounded-xl border border-green-500/30 bg-slate-800 p-6 flex flex-col gap-4"
-                    >
-                      <div className="flex items-baseline justify-between">
-                        <h3 className="text-2xl font-bold text-green-400">
-                          {sig.ticker}
-                        </h3>
-                        <span className="text-sm font-bold text-green-400 bg-green-500/10 border border-green-500/30 px-3 py-1 rounded-full">
-                          +{sig.pnlPct!.toFixed(1)}%
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <span className="bg-slate-700/60 px-2 py-0.5 rounded">
-                          {formatStrategy(sig.strategy)}
-                        </span>
-                        <span className="text-slate-500">·</span>
-                        <span className="text-slate-500">{signal.date}</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <span className="text-slate-500 block">Entry</span>
-                          <span className="text-slate-100 font-medium">
-                            ${sig.entry.toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Current</span>
-                          <span className="text-green-400 font-medium">
-                            ${sig.currentPrice!.toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Target</span>
-                          <span className="text-slate-100 font-medium">
-                            ${sig.target.toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">R:R</span>
-                          <span className="text-slate-100 font-semibold">
-                            {rr.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* Date selector */}
+            {availableDates.length > 1 && (
+              <div className="flex items-center gap-2">
+                <label htmlFor="date-select" className="text-sm text-slate-400">
+                  History:
+                </label>
+                <select
+                  id="date-select"
+                  value={selectedDate ?? ""}
+                  onChange={(e) => loadTradesForDate(e.target.value)}
+                  className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  {availableDates.map((date) => (
+                    <option key={date} value={date}>
+                      {formatDate(date)}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
-          </section>
-        )}
+          </div>
+
+          {/* Generation timestamp */}
+          {winningTrades && (
+            <p className="text-xs text-slate-500 mb-4">
+              Generated: {formatTimestamp(winningTrades.generatedAt)}
+              {selectedDate && ` · Scan date: ${selectedDate}`}
+            </p>
+          )}
+
+          {/* Loading state for date switching */}
+          {tradesLoading && (
+            <div className="text-center py-8">
+              <p className="text-slate-400 animate-pulse">Loading trades...</p>
+            </div>
+          )}
+
+          {/* Trades grid */}
+          {!tradesLoading && trades.length === 0 && (
+            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-8 text-center">
+              <p className="text-slate-500">
+                No winning trades recorded for this date. Trades must be ≥30 days old and have hit their target.
+              </p>
+            </div>
+          )}
+
+          {!tradesLoading && trades.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {trades.map((trade) => {
+                const rr =
+                  trade.entryPrice - trade.stopPrice !== 0
+                    ? (trade.targetPrice - trade.entryPrice) / (trade.entryPrice - trade.stopPrice)
+                    : 0;
+
+                // Build chart URL if chartFilename exists
+                const chartUrl = trade.chartFilename && selectedDate
+                  ? `${API_URL}/api/winning-trades/charts/${selectedDate.replace(/-/g, "/")}/${trade.chartFilename}`
+                  : null;
+
+                return (
+                  <div
+                    key={`${trade.ticker}-${trade.strategy}-${trade.entryDate}`}
+                    className="rounded-xl border border-green-500/30 bg-slate-800 p-6 flex flex-col gap-4"
+                  >
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-2xl font-bold text-green-400">
+                        {trade.ticker}
+                      </h3>
+                      <span className="text-sm font-bold text-green-400 bg-green-500/10 border border-green-500/30 px-3 py-1 rounded-full">
+                        +{trade.pnlPercent.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <span className="bg-slate-700/60 px-2 py-0.5 rounded">
+                        {formatStrategy(trade.strategy)}
+                      </span>
+                      <span className="text-slate-500">·</span>
+                      <span className="text-slate-500">
+                        Signaled {trade.entryDate}
+                      </span>
+                      <span className="text-green-500/80 text-xs ml-auto">
+                        ✓ Target hit
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <span className="text-slate-500 block">Entry</span>
+                        <span className="text-slate-100 font-medium">
+                          ${trade.entryPrice.toFixed(2)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Current</span>
+                        <span className="text-green-400 font-medium">
+                          ${trade.currentPrice.toFixed(2)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Target</span>
+                        <span className="text-slate-100 font-medium">
+                          ${trade.targetPrice.toFixed(2)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">R:R</span>
+                        <span className="text-slate-100 font-semibold">
+                          {rr.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Chart image (if available) */}
+                    {chartUrl && (
+                      <div className="mt-2 rounded-lg overflow-hidden border border-slate-700">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={chartUrl}
+                          alt={`${trade.ticker} ${formatStrategy(trade.strategy)} chart`}
+                          className="w-full h-auto"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* CTA */}
+          <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-6 py-4 mt-8 text-center">
+            <p className="text-slate-300 text-sm mb-3">
+              Live signals are posted daily to Discord after market close.
+            </p>
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-[#5865F2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#4752C4] transition-colors"
+            >
+              Get today&apos;s live signals →
+            </a>
+          </div>
+        </section>
 
         {/* Final CTA */}
         <section className="text-center mt-16">
