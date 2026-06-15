@@ -190,10 +190,10 @@ export default function Home() {
           <div className="overflow-hidden rounded-xl border border-slate-800 shadow-2xl shadow-black/40">
             <Image
               src="/signal-card-preview.png"
-              alt="Example Discord signal card showing entry, stop, target, and annotated chart"
-              width={800}
-              height={600}
-              className="block"
+              alt="Example signal card showing AAPL trend pullback with entry, stop, target, and annotated chart"
+              width={900}
+              height={720}
+              className="block w-full h-auto"
             />
           </div>
           <p className="mt-6 max-w-2xl text-center text-sm leading-6 text-slate-400">
