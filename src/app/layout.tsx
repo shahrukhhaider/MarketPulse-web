@@ -12,14 +12,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "PaperEdge — Market Intelligence for Swing Traders",
+  title: "PaperEdge — Practice Trading with Real Market Opportunities",
   description:
-    "Daily swing trade signals, market regime detection, and transparent trade tracking. Join the community for free.",
+    "Discover real swing trading opportunities, paper trade them, and build your edge through experience. Learn by doing — not by following predictions.",
   openGraph: {
     siteName: "PaperEdge",
-    title: "PaperEdge — Market Intelligence for Swing Traders",
+    title: "PaperEdge — Practice Trading with Real Market Opportunities",
     description:
-      "Daily swing trade signals, market regime detection, and transparent trade tracking. Join the community for free.",
+      "Discover real swing trading opportunities, paper trade them, and build your edge through experience. Learn by doing — not by following predictions.",
   },
 };
 
@@ -43,7 +43,7 @@ export default function RootLayout({
             <ul className="flex items-center gap-6 text-sm font-medium text-slate-300">
               <li>
                 <Link href="/market" className="hover:text-white transition-colors">
-                  Market Signals
+                  Market
                 </Link>
               </li>
               <li>

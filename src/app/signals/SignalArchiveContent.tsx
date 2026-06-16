@@ -345,7 +345,7 @@ function SignalChartImage({
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const src = `${API_URL}${chartUrl}`;
-  const alt = `Signal chart for ${ticker.toUpperCase()} ${strategy.replace(/_/g, " ")}`;
+  const alt = `Opportunity chart for ${ticker.toUpperCase()} ${strategy.replace(/_/g, " ")}`;
 
   if (errored) return null;
 
@@ -601,17 +601,17 @@ function DiscordCTA() {
   return (
     <div className="rounded-lg border border-slate-700 bg-slate-900/50 px-6 py-8 mt-10 text-center">
       <h3 className="text-lg font-semibold text-white mb-2">
-        Get Live Signals Daily
+        Join the Community
       </h3>
       <p className="text-slate-400 text-sm mb-4">
-        Join the PaperEdge community on Discord for real-time signals, market
-        commentary, and trade journaling tools.
+        Join traders discussing opportunities, sharing paper trades, and
+        learning together.
       </p>
       <a
         href={DISCORD_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Join the PaperEdge Discord community for live signals"
+        aria-label="Join the PaperEdge trading community on Discord"
         className="inline-flex items-center gap-2 rounded-md bg-[#5865F2] px-5 py-2 text-sm font-semibold text-white hover:bg-[#4752C4] transition-colors"
       >
         Join Discord →
@@ -711,10 +711,10 @@ export default function SignalArchiveContent() {
         <div className="text-center max-w-md">
           <p className="text-5xl mb-4">📭</p>
           <h2 className="text-xl font-bold text-white mb-2">
-            No Signal Data Yet
+            No Opportunity Data Yet
           </h2>
           <p className="text-slate-400">
-            Signal scans haven&apos;t been recorded yet. Check back after the
+            Opportunity scans haven&apos;t been recorded yet. Check back after the
             first daily scan completes.
           </p>
         </div>
@@ -728,7 +728,7 @@ export default function SignalArchiveContent() {
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
           <p className="text-5xl mb-4 animate-pulse">📡</p>
-          <p className="text-slate-400">Loading signal archive...</p>
+          <p className="text-slate-400">Loading opportunity archive...</p>
         </div>
       </div>
     );
@@ -750,7 +750,7 @@ export default function SignalArchiveContent() {
               Data Unavailable
             </h2>
             <p className="text-slate-400">
-              Unable to load signal data. Please try again later.
+              Unable to load opportunity data. Please try again later.
             </p>
           </div>
         </div>
@@ -775,7 +775,7 @@ export default function SignalArchiveContent() {
           {entry.active.length > 0 && (
             <section className="mb-8">
               <h2 className="text-lg font-semibold text-white mb-4">
-                Active Signals
+                Active Opportunities
               </h2>
               <ActiveSignalsTable signals={entry.active} />
             </section>
@@ -795,7 +795,7 @@ export default function SignalArchiveContent() {
           {entry.active.length === 0 && entry.near.length === 0 && (
             <div className="text-center py-12">
               <p className="text-slate-500">
-                No signals were generated on this date.
+                No opportunities were generated on this date.
               </p>
             </div>
           )}

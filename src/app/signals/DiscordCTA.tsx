@@ -14,17 +14,17 @@ export default function DiscordCTA() {
   return (
     <section className="mt-12 rounded-xl border border-slate-800 bg-slate-900/70 px-6 py-8 text-center">
       <h2 className="text-xl font-bold text-white sm:text-2xl">
-        Get Live Signals
+        Join the Community
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-slate-400">
-        Join our Discord community for real-time trade signals, market analysis,
-        and community discussion.
+        Join traders discussing opportunities, sharing paper trades, and
+        learning together.
       </p>
       <a
         href={DISCORD_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Join PaperEdge Discord community for live trade signals"
+        aria-label="Join the PaperEdge Discord community"
         className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#5865F2] px-6 py-3 text-base font-semibold text-white shadow-lg shadow-[#5865F2]/20 hover:bg-[#4752C4] transition-colors"
       >
         <svg
