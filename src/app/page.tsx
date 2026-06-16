@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "PaperEdge — Learn to Trade with Real Signals",
@@ -96,12 +97,12 @@ export default function Home() {
             </svg>
             Join the Discord Community
           </a>
-          <a
-            href="/market"
+          <Link
+            href="/signals"
             className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-slate-500 hover:text-white transition-colors"
           >
             View Signal Archive →
-          </a>
+          </Link>
           <p className="text-sm text-slate-500">
             Free tier available · No credit card required
           </p>
