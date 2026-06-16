@@ -128,6 +128,7 @@ const OUTCOME_MAP = {
 };
 
 function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
+  const sorted = [...signals].sort((a, b) => b.confidence - a.confidence);
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-800">
       <table className="w-full text-sm text-left">
@@ -148,7 +149,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/50">
-          {signals.map((signal) => {
+          {sorted.map((signal) => {
             const pnlColor =
               signal.pnlPct != null && signal.pnlPct > 0
                 ? "text-green-400"
@@ -216,6 +217,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
 }
 
 function NearSignalsTable({ signals }: { signals: NearSignal[] }) {
+  const sorted = [...signals].sort((a, b) => b.confidence - a.confidence);
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-800">
       <table className="w-full text-sm text-left">
@@ -231,7 +233,7 @@ function NearSignalsTable({ signals }: { signals: NearSignal[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/50">
-          {signals.map((signal) => (
+          {sorted.map((signal) => (
             <tr
               key={`${signal.ticker}-${signal.strategy}`}
               className="bg-slate-950 hover:bg-slate-900/70 transition-colors"
