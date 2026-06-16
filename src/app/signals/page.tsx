@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function SignalsPage() {
   return (
     <div className="min-h-screen bg-slate-950">
-      <section className="mx-auto max-w-5xl px-6 pt-16 pb-4">
+      <section className="mx-auto max-w-7xl px-6 pt-16 pb-4">
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           Signal Archive
         </h1>
@@ -25,7 +25,9 @@ export default function SignalsPage() {
           members on Discord.
         </p>
       </section>
-      <SignalArchiveContent />
+      <section className="mx-auto max-w-7xl px-6 pb-16">
+        <SignalArchiveContent />
+      </section>
     </div>
   );
 }

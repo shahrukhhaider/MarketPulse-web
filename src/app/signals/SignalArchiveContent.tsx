@@ -120,115 +120,149 @@ function MarketContextBanner({ context }: { context: MarketContext | null }) {
   );
 }
 
-function ActiveSignalCard({ signal }: { signal: ActiveSignal }) {
-  const pnlColor =
-    signal.pnlPct != null && signal.pnlPct > 0
-      ? "text-green-400"
-      : "text-red-400";
+const OUTCOME_MAP = {
+  target_hit: { text: "✓ Target Hit", color: "text-green-400" },
+  stopped_out: { text: "✗ Stopped Out", color: "text-red-400" },
+  open: { text: "◌ Open", color: "text-slate-400" },
+  pending: { text: "— Pending", color: "text-slate-600" },
+};
 
-  const outcomeMap = {
-    target_hit: { text: "✓ Target Hit", color: "text-green-400" },
-    stopped_out: { text: "✗ Stopped Out", color: "text-red-400" },
-    open: { text: "◌ Open", color: "text-slate-400" },
-    pending: { text: "— Pending", color: "text-slate-600" },
-  };
-
-  const outcome = outcomeMap[signal.outcome];
-
-  // R-multiple: abs(target - entry) / abs(entry - stop), shown when not pending
-  const riskDistance = Math.abs(signal.entry - signal.stop);
-  const rewardDistance = Math.abs(signal.target - signal.entry);
-  const rMultiple =
-    signal.outcome !== "pending" && riskDistance > 0
-      ? (rewardDistance / riskDistance).toFixed(1)
-      : null;
-
+function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-      <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-xl font-bold text-white">{signal.ticker}</h3>
-        <span className={`text-sm font-medium ${outcome.color}`}>
-          {outcome.text}
-        </span>
-      </div>
-      <p className="text-xs text-slate-500 mb-3 capitalize">
-        {signal.strategy.replace(/_/g, " ")}
-      </p>
-      <div className="grid grid-cols-3 gap-2 text-sm mb-3">
-        <div>
-          <span className="text-slate-500 block text-xs">Entry</span>
-          <span className="text-slate-200">${signal.entry.toFixed(2)}</span>
-        </div>
-        <div>
-          <span className="text-slate-500 block text-xs">Stop</span>
-          <span className="text-slate-200">${signal.stop.toFixed(2)}</span>
-        </div>
-        <div>
-          <span className="text-slate-500 block text-xs">Target</span>
-          <span className="text-slate-200">${signal.target.toFixed(2)}</span>
-        </div>
-      </div>
-      {signal.currentPrice != null && signal.pnlPct != null && (
-        <div className="flex items-center gap-3 text-sm mb-3">
-          <span className="text-slate-400">
-            Current: ${signal.currentPrice.toFixed(2)}
-          </span>
-          <span className={`font-medium ${pnlColor}`}>
-            {signal.pnlPct >= 0 ? "+" : ""}
-            {signal.pnlPct.toFixed(2)}%
-          </span>
-        </div>
-      )}
-      <div className="flex items-center gap-3 text-xs text-slate-500 mb-3">
-        <span>Confidence: {signal.confidence}</span>
-        <span>RS: {signal.rs_rating}</span>
-        {signal.rvol != null && <span>RVOL: {signal.rvol.toFixed(1)}x</span>}
-        {rMultiple != null && <span>R: {rMultiple}</span>}
-      </div>
-      {signal.rationale.length > 0 && (
-        <ul className="text-xs text-slate-400 list-disc list-inside space-y-0.5">
-          {signal.rationale.map((r, i) => (
-            <li key={i}>{r}</li>
-          ))}
-        </ul>
-      )}
+    <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <table className="w-full text-sm text-left">
+        <thead className="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-800">
+          <tr>
+            <th className="px-4 py-3">Ticker</th>
+            <th className="px-4 py-3">Strategy</th>
+            <th className="px-4 py-3 text-right">Entry</th>
+            <th className="px-4 py-3 text-right">Stop</th>
+            <th className="px-4 py-3 text-right">Target</th>
+            <th className="px-4 py-3 text-right">Current</th>
+            <th className="px-4 py-3 text-right">P&L</th>
+            <th className="px-4 py-3 text-center">R</th>
+            <th className="px-4 py-3 text-center">Conf</th>
+            <th className="px-4 py-3 text-center">RS</th>
+            <th className="px-4 py-3 text-center">RVOL</th>
+            <th className="px-4 py-3">Outcome</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/50">
+          {signals.map((signal) => {
+            const pnlColor =
+              signal.pnlPct != null && signal.pnlPct > 0
+                ? "text-green-400"
+                : "text-red-400";
+            const outcome = OUTCOME_MAP[signal.outcome];
+            const riskDistance = Math.abs(signal.entry - signal.stop);
+            const rewardDistance = Math.abs(signal.target - signal.entry);
+            const rMultiple =
+              signal.outcome !== "pending" && riskDistance > 0
+                ? (rewardDistance / riskDistance).toFixed(1)
+                : "—";
+
+            return (
+              <tr
+                key={`${signal.ticker}-${signal.strategy}`}
+                className="bg-slate-950 hover:bg-slate-900/70 transition-colors"
+              >
+                <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
+                  {signal.ticker}
+                </td>
+                <td className="px-4 py-3 text-slate-400 capitalize whitespace-nowrap">
+                  {signal.strategy.replace(/_/g, " ")}
+                </td>
+                <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
+                  ${signal.entry.toFixed(2)}
+                </td>
+                <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
+                  ${signal.stop.toFixed(2)}
+                </td>
+                <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
+                  ${signal.target.toFixed(2)}
+                </td>
+                <td className="px-4 py-3 text-right text-slate-300 tabular-nums">
+                  {signal.currentPrice != null
+                    ? `$${signal.currentPrice.toFixed(2)}`
+                    : "—"}
+                </td>
+                <td className={`px-4 py-3 text-right font-medium tabular-nums ${signal.pnlPct != null ? pnlColor : "text-slate-600"}`}>
+                  {signal.pnlPct != null
+                    ? `${signal.pnlPct >= 0 ? "+" : ""}${signal.pnlPct.toFixed(2)}%`
+                    : "—"}
+                </td>
+                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
+                  {rMultiple}
+                </td>
+                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
+                  {signal.confidence}
+                </td>
+                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
+                  {signal.rs_rating}
+                </td>
+                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
+                  {signal.rvol != null ? `${signal.rvol.toFixed(1)}x` : "—"}
+                </td>
+                <td className={`px-4 py-3 whitespace-nowrap font-medium ${outcome.color}`}>
+                  {outcome.text}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function NearSignalCard({ signal }: { signal: NearSignal }) {
+function NearSignalsTable({ signals }: { signals: NearSignal[] }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-      <div className="flex items-baseline justify-between mb-2">
-        <h3 className="text-xl font-bold text-white">{signal.ticker}</h3>
-        <span className="text-xs text-slate-500 italic">Near Setup</span>
-      </div>
-      <p className="text-xs text-slate-500 mb-3 capitalize">
-        {signal.strategy.replace(/_/g, " ")}
-      </p>
-      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-        <div>
-          <span className="text-slate-500 block text-xs">Entry Trigger</span>
-          <span className="text-slate-200">
-            ${signal.entry_trigger.toFixed(2)}
-          </span>
-        </div>
-        <div>
-          <span className="text-slate-500 block text-xs">Stop</span>
-          <span className="text-slate-200">${signal.stop.toFixed(2)}</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-3 text-xs text-slate-500 mb-3">
-        <span>Confidence: {signal.confidence}</span>
-        <span>RS: {signal.rs_rating}</span>
-      </div>
-      {signal.rationale.length > 0 && (
-        <ul className="text-xs text-slate-400 list-disc list-inside space-y-0.5">
-          {signal.rationale.map((r, i) => (
-            <li key={i}>{r}</li>
+    <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <table className="w-full text-sm text-left">
+        <thead className="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-800">
+          <tr>
+            <th className="px-4 py-3">Ticker</th>
+            <th className="px-4 py-3">Strategy</th>
+            <th className="px-4 py-3 text-right">Entry Trigger</th>
+            <th className="px-4 py-3 text-right">Stop</th>
+            <th className="px-4 py-3 text-center">Conf</th>
+            <th className="px-4 py-3 text-center">RS</th>
+            <th className="px-4 py-3">Rationale</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/50">
+          {signals.map((signal) => (
+            <tr
+              key={`${signal.ticker}-${signal.strategy}`}
+              className="bg-slate-950 hover:bg-slate-900/70 transition-colors"
+            >
+              <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
+                {signal.ticker}
+              </td>
+              <td className="px-4 py-3 text-slate-400 capitalize whitespace-nowrap">
+                {signal.strategy.replace(/_/g, " ")}
+              </td>
+              <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
+                ${signal.entry_trigger.toFixed(2)}
+              </td>
+              <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
+                ${signal.stop.toFixed(2)}
+              </td>
+              <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
+                {signal.confidence}
+              </td>
+              <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
+                {signal.rs_rating}
+              </td>
+              <td className="px-4 py-3 text-slate-400 text-xs max-w-xs">
+                {signal.rationale.length > 0
+                  ? signal.rationale.join("; ")
+                  : "—"}
+              </td>
+            </tr>
           ))}
-        </ul>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -415,14 +449,7 @@ export default function SignalArchiveContent() {
               <h2 className="text-lg font-semibold text-white mb-4">
                 Active Signals
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {entry.active.map((signal) => (
-                  <ActiveSignalCard
-                    key={`${signal.ticker}-${signal.strategy}`}
-                    signal={signal}
-                  />
-                ))}
-              </div>
+              <ActiveSignalsTable signals={entry.active} />
             </section>
           )}
 
@@ -432,14 +459,7 @@ export default function SignalArchiveContent() {
               <h2 className="text-lg font-semibold text-white mb-4">
                 Near Setups
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {entry.near.map((signal) => (
-                  <NearSignalCard
-                    key={`${signal.ticker}-${signal.strategy}`}
-                    signal={signal}
-                  />
-                ))}
-              </div>
+              <NearSignalsTable signals={entry.near} />
             </section>
           )}
 
