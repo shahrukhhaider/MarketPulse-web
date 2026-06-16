@@ -38,6 +38,7 @@ interface ActiveSignal {
   currentPrice: number | null;
   pnlPct: number | null;
   outcome: "target_hit" | "stopped_out" | "open" | "pending";
+  chartUrl: string | null;
 }
 
 interface NearSignal {
@@ -237,6 +238,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
       }),
       activeColumnHelper.accessor("confidence", {
         header: "Conf",
+        cell: (info) => `${Math.round(info.getValue() * 100)}%`,
         meta: { align: "center" },
       }),
       activeColumnHelper.accessor("rs_rating", {
@@ -331,6 +333,39 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
   );
 }
 
+function SignalChartImage({
+  chartUrl,
+  ticker,
+  strategy,
+}: {
+  chartUrl: string;
+  ticker: string;
+  strategy: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const src = `${API_URL}${chartUrl}`;
+  const alt = `Signal chart for ${ticker.toUpperCase()} ${strategy.replace(/_/g, " ")}`;
+
+  if (errored) return null;
+
+  return (
+    <div className="w-full" style={{ minHeight: loaded ? "auto" : "300px" }}>
+      <img
+        src={src}
+        alt={alt}
+        className="w-full max-h-[400px] object-contain rounded-lg"
+        onLoad={() => setLoaded(true)}
+        onError={() => setErrored(true)}
+        style={{ display: loaded ? "block" : "none" }}
+      />
+      {!loaded && (
+        <div className="w-full h-[300px] bg-slate-800/50 rounded-lg animate-pulse" />
+      )}
+    </div>
+  );
+}
+
 function ExpandedActiveDetail({ signal }: { signal: ActiveSignal }) {
   const riskDistance = Math.abs(signal.entry - signal.stop);
   const rewardDistance = Math.abs(signal.target - signal.entry);
@@ -341,6 +376,15 @@ function ExpandedActiveDetail({ signal }: { signal: ActiveSignal }) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+      {signal.chartUrl && (
+        <div className="col-span-full mb-4">
+          <SignalChartImage
+            chartUrl={signal.chartUrl}
+            ticker={signal.ticker}
+            strategy={signal.strategy}
+          />
+        </div>
+      )}
       <div>
         <span className="text-slate-500 uppercase tracking-wide font-medium block mb-2">
           Exit Price Detail
@@ -443,6 +487,7 @@ function NearSignalsTable({ signals }: { signals: NearSignal[] }) {
       }),
       nearColumnHelper.accessor("confidence", {
         header: "Conf",
+        cell: (info) => `${Math.round(info.getValue() * 100)}%`,
         meta: { align: "center" },
       }),
       nearColumnHelper.accessor("rs_rating", {
