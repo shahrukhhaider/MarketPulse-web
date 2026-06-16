@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getExpandedRowModel,
+  getSortedRowModel,
+  flexRender,
+  createColumnHelper,
+  type ExpandedState,
+  type SortingState,
+} from "@tanstack/react-table";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -127,144 +137,415 @@ const OUTCOME_MAP = {
   pending: { text: "— Pending", color: "text-slate-600" },
 };
 
+// ---------------------------------------------------------------------------
+// Active Signals Table (TanStack Table with expandable rows)
+// ---------------------------------------------------------------------------
+
+const activeColumnHelper = createColumnHelper<ActiveSignal>();
+
 function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
-  const sorted = [...signals].sort((a, b) => b.confidence - a.confidence);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "confidence", desc: true },
+  ]);
+
+  const columns = useMemo(
+    () => [
+      activeColumnHelper.display({
+        id: "expander",
+        header: () => null,
+        cell: ({ row }) => (
+          <button
+            onClick={row.getToggleExpandedHandler()}
+            className="text-slate-500 text-xs p-1"
+            aria-label={row.getIsExpanded() ? "Collapse row" : "Expand row"}
+          >
+            <span
+              className={`inline-block transition-transform duration-150 ${
+                row.getIsExpanded() ? "rotate-90" : ""
+              }`}
+            >
+              ▶
+            </span>
+          </button>
+        ),
+        size: 32,
+      }),
+      activeColumnHelper.accessor("ticker", {
+        header: "Ticker",
+        cell: (info) => (
+          <span className="font-semibold text-white">{info.getValue()}</span>
+        ),
+      }),
+      activeColumnHelper.accessor("strategy", {
+        header: "Strategy",
+        cell: (info) => (
+          <span className="text-slate-400 capitalize">
+            {info.getValue().replace(/_/g, " ")}
+          </span>
+        ),
+      }),
+      activeColumnHelper.accessor("entry", {
+        header: "Entry",
+        cell: (info) => `$${info.getValue().toFixed(2)}`,
+        meta: { align: "right" },
+      }),
+      activeColumnHelper.accessor("stop", {
+        header: "Stop",
+        cell: (info) => `$${info.getValue().toFixed(2)}`,
+        meta: { align: "right" },
+      }),
+      activeColumnHelper.accessor("target", {
+        header: "Target",
+        cell: (info) => `$${info.getValue().toFixed(2)}`,
+        meta: { align: "right" },
+      }),
+      activeColumnHelper.accessor("currentPrice", {
+        header: "Current",
+        cell: (info) => {
+          const v = info.getValue();
+          return v != null ? `$${v.toFixed(2)}` : "—";
+        },
+        meta: { align: "right" },
+      }),
+      activeColumnHelper.accessor("pnlPct", {
+        header: "P&L",
+        cell: (info) => {
+          const v = info.getValue();
+          if (v == null) return <span className="text-slate-600">—</span>;
+          const color = v > 0 ? "text-green-400" : "text-red-400";
+          return (
+            <span className={`font-medium ${color}`}>
+              {v >= 0 ? "+" : ""}
+              {v.toFixed(2)}%
+            </span>
+          );
+        },
+        meta: { align: "right" },
+      }),
+      activeColumnHelper.display({
+        id: "rMultiple",
+        header: "R",
+        cell: ({ row }) => {
+          const s = row.original;
+          const risk = Math.abs(s.entry - s.stop);
+          const reward = Math.abs(s.target - s.entry);
+          if (s.outcome === "pending" || risk === 0) return "—";
+          return (reward / risk).toFixed(1);
+        },
+        meta: { align: "center" },
+      }),
+      activeColumnHelper.accessor("confidence", {
+        header: "Conf",
+        meta: { align: "center" },
+      }),
+      activeColumnHelper.accessor("rs_rating", {
+        header: "RS",
+        meta: { align: "center" },
+      }),
+      activeColumnHelper.accessor("rvol", {
+        header: "RVOL",
+        cell: (info) => {
+          const v = info.getValue();
+          return v != null ? `${v.toFixed(1)}x` : "—";
+        },
+        meta: { align: "center" },
+      }),
+      activeColumnHelper.accessor("outcome", {
+        header: "Outcome",
+        cell: (info) => {
+          const o = OUTCOME_MAP[info.getValue()];
+          return <span className={`font-medium ${o.color}`}>{o.text}</span>;
+        },
+      }),
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: signals,
+    columns,
+    state: { expanded, sorting },
+    onExpandedChange: setExpanded,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getRowCanExpand: () => true,
+  });
+
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-800">
       <table className="w-full text-sm text-left">
         <thead className="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-800">
-          <tr>
-            <th className="px-4 py-3">Ticker</th>
-            <th className="px-4 py-3">Strategy</th>
-            <th className="px-4 py-3 text-right">Entry</th>
-            <th className="px-4 py-3 text-right">Stop</th>
-            <th className="px-4 py-3 text-right">Target</th>
-            <th className="px-4 py-3 text-right">Current</th>
-            <th className="px-4 py-3 text-right">P&L</th>
-            <th className="px-4 py-3 text-center">R</th>
-            <th className="px-4 py-3 text-center">Conf</th>
-            <th className="px-4 py-3 text-center">RS</th>
-            <th className="px-4 py-3 text-center">RVOL</th>
-            <th className="px-4 py-3">Outcome</th>
-          </tr>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const align = (header.column.columnDef.meta as { align?: string })?.align;
+                return (
+                  <th
+                    key={header.id}
+                    className={`px-4 py-3 ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${header.column.getCanSort() ? "cursor-pointer select-none hover:text-slate-200" : ""}`}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.column.getIsSorted() === "asc" && " ↑"}
+                    {header.column.getIsSorted() === "desc" && " ↓"}
+                  </th>
+                );
+              })}
+            </tr>
+          ))}
         </thead>
-        <tbody className="divide-y divide-slate-800/50">
-          {sorted.map((signal) => {
-            const pnlColor =
-              signal.pnlPct != null && signal.pnlPct > 0
-                ? "text-green-400"
-                : "text-red-400";
-            const outcome = OUTCOME_MAP[signal.outcome];
-            const riskDistance = Math.abs(signal.entry - signal.stop);
-            const rewardDistance = Math.abs(signal.target - signal.entry);
-            const rMultiple =
-              signal.outcome !== "pending" && riskDistance > 0
-                ? (rewardDistance / riskDistance).toFixed(1)
-                : "—";
-
-            return (
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <Fragment key={row.id}>
               <tr
-                key={`${signal.ticker}-${signal.strategy}`}
-                className="bg-slate-950 hover:bg-slate-900/70 transition-colors"
+                className="bg-slate-950 hover:bg-slate-900/70 transition-colors cursor-pointer border-b border-slate-800/50"
+                onClick={row.getToggleExpandedHandler()}
               >
-                <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
-                  {signal.ticker}
-                </td>
-                <td className="px-4 py-3 text-slate-400 capitalize whitespace-nowrap">
-                  {signal.strategy.replace(/_/g, " ")}
-                </td>
-                <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
-                  ${signal.entry.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
-                  ${signal.stop.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
-                  ${signal.target.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-right text-slate-300 tabular-nums">
-                  {signal.currentPrice != null
-                    ? `$${signal.currentPrice.toFixed(2)}`
-                    : "—"}
-                </td>
-                <td className={`px-4 py-3 text-right font-medium tabular-nums ${signal.pnlPct != null ? pnlColor : "text-slate-600"}`}>
-                  {signal.pnlPct != null
-                    ? `${signal.pnlPct >= 0 ? "+" : ""}${signal.pnlPct.toFixed(2)}%`
-                    : "—"}
-                </td>
-                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
-                  {rMultiple}
-                </td>
-                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
-                  {signal.confidence}
-                </td>
-                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
-                  {signal.rs_rating}
-                </td>
-                <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
-                  {signal.rvol != null ? `${signal.rvol.toFixed(1)}x` : "—"}
-                </td>
-                <td className={`px-4 py-3 whitespace-nowrap font-medium ${outcome.color}`}>
-                  {outcome.text}
-                </td>
+                {row.getVisibleCells().map((cell) => {
+                  const align = (cell.column.columnDef.meta as { align?: string })?.align;
+                  return (
+                    <td
+                      key={cell.id}
+                      className={`px-4 py-3 tabular-nums whitespace-nowrap ${align === "right" ? "text-right text-slate-200" : align === "center" ? "text-center text-slate-400" : ""}`}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  );
+                })}
               </tr>
-            );
-          })}
+              {row.getIsExpanded() && (
+                <tr className="bg-slate-900/50 border-b border-slate-800/50">
+                  <td colSpan={row.getVisibleCells().length} className="px-8 py-4">
+                    <ExpandedActiveDetail signal={row.original} />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
         </tbody>
       </table>
     </div>
   );
 }
 
+function ExpandedActiveDetail({ signal }: { signal: ActiveSignal }) {
+  const riskDistance = Math.abs(signal.entry - signal.stop);
+  const rewardDistance = Math.abs(signal.target - signal.entry);
+  const rMultiple =
+    signal.outcome !== "pending" && riskDistance > 0
+      ? (rewardDistance / riskDistance).toFixed(1)
+      : null;
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+      <div>
+        <span className="text-slate-500 uppercase tracking-wide font-medium block mb-2">
+          Exit Price Detail
+        </span>
+        <div className="space-y-1.5 text-slate-300">
+          <p>
+            Stop Loss:{" "}
+            <span className="text-red-400 font-medium">${signal.stop.toFixed(2)}</span>
+            <span className="text-slate-500 ml-1">
+              ({riskDistance > 0 ? `-${((riskDistance / signal.entry) * 100).toFixed(1)}%` : "—"} from entry)
+            </span>
+          </p>
+          <p>
+            Target:{" "}
+            <span className="text-green-400 font-medium">${signal.target.toFixed(2)}</span>
+            <span className="text-slate-500 ml-1">
+              ({rewardDistance > 0 ? `+${((rewardDistance / signal.entry) * 100).toFixed(1)}%` : "—"} from entry)
+            </span>
+          </p>
+          {rMultiple && (
+            <p>
+              Risk/Reward: <span className="text-blue-400 font-medium">{rMultiple}R</span>
+            </p>
+          )}
+        </div>
+      </div>
+      {signal.rationale.length > 0 && (
+        <div>
+          <span className="text-slate-500 uppercase tracking-wide font-medium block mb-2">
+            Rationale
+          </span>
+          <ul className="list-disc list-inside text-slate-400 space-y-1">
+            {signal.rationale.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Near Signals Table (TanStack Table with expandable rows)
+// ---------------------------------------------------------------------------
+
+const nearColumnHelper = createColumnHelper<NearSignal>();
+
 function NearSignalsTable({ signals }: { signals: NearSignal[] }) {
-  const sorted = [...signals].sort((a, b) => b.confidence - a.confidence);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "confidence", desc: true },
+  ]);
+
+  const columns = useMemo(
+    () => [
+      nearColumnHelper.display({
+        id: "expander",
+        header: () => null,
+        cell: ({ row }) => (
+          <button
+            onClick={row.getToggleExpandedHandler()}
+            className="text-slate-500 text-xs p-1"
+            aria-label={row.getIsExpanded() ? "Collapse row" : "Expand row"}
+          >
+            <span
+              className={`inline-block transition-transform duration-150 ${
+                row.getIsExpanded() ? "rotate-90" : ""
+              }`}
+            >
+              ▶
+            </span>
+          </button>
+        ),
+        size: 32,
+      }),
+      nearColumnHelper.accessor("ticker", {
+        header: "Ticker",
+        cell: (info) => (
+          <span className="font-semibold text-white">{info.getValue()}</span>
+        ),
+      }),
+      nearColumnHelper.accessor("strategy", {
+        header: "Strategy",
+        cell: (info) => (
+          <span className="text-slate-400 capitalize">
+            {info.getValue().replace(/_/g, " ")}
+          </span>
+        ),
+      }),
+      nearColumnHelper.accessor("entry_trigger", {
+        header: "Entry Trigger",
+        cell: (info) => `$${info.getValue().toFixed(2)}`,
+        meta: { align: "right" },
+      }),
+      nearColumnHelper.accessor("stop", {
+        header: "Stop",
+        cell: (info) => `$${info.getValue().toFixed(2)}`,
+        meta: { align: "right" },
+      }),
+      nearColumnHelper.accessor("confidence", {
+        header: "Conf",
+        meta: { align: "center" },
+      }),
+      nearColumnHelper.accessor("rs_rating", {
+        header: "RS",
+        meta: { align: "center" },
+      }),
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: signals,
+    columns,
+    state: { expanded, sorting },
+    onExpandedChange: setExpanded,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getRowCanExpand: () => true,
+  });
+
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-800">
       <table className="w-full text-sm text-left">
         <thead className="bg-slate-900 text-xs uppercase text-slate-400 border-b border-slate-800">
-          <tr>
-            <th className="px-4 py-3">Ticker</th>
-            <th className="px-4 py-3">Strategy</th>
-            <th className="px-4 py-3 text-right">Entry Trigger</th>
-            <th className="px-4 py-3 text-right">Stop</th>
-            <th className="px-4 py-3 text-center">Conf</th>
-            <th className="px-4 py-3 text-center">RS</th>
-            <th className="px-4 py-3">Rationale</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-800/50">
-          {sorted.map((signal) => (
-            <tr
-              key={`${signal.ticker}-${signal.strategy}`}
-              className="bg-slate-950 hover:bg-slate-900/70 transition-colors"
-            >
-              <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
-                {signal.ticker}
-              </td>
-              <td className="px-4 py-3 text-slate-400 capitalize whitespace-nowrap">
-                {signal.strategy.replace(/_/g, " ")}
-              </td>
-              <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
-                ${signal.entry_trigger.toFixed(2)}
-              </td>
-              <td className="px-4 py-3 text-right text-slate-200 tabular-nums">
-                ${signal.stop.toFixed(2)}
-              </td>
-              <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
-                {signal.confidence}
-              </td>
-              <td className="px-4 py-3 text-center text-slate-400 tabular-nums">
-                {signal.rs_rating}
-              </td>
-              <td className="px-4 py-3 text-slate-400 text-xs max-w-xs">
-                {signal.rationale.length > 0
-                  ? signal.rationale.join("; ")
-                  : "—"}
-              </td>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                const align = (header.column.columnDef.meta as { align?: string })?.align;
+                return (
+                  <th
+                    key={header.id}
+                    className={`px-4 py-3 ${align === "right" ? "text-right" : align === "center" ? "text-center" : ""} ${header.column.getCanSort() ? "cursor-pointer select-none hover:text-slate-200" : ""}`}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.column.getIsSorted() === "asc" && " ↑"}
+                    {header.column.getIsSorted() === "desc" && " ↓"}
+                  </th>
+                );
+              })}
             </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <Fragment key={row.id}>
+              <tr
+                className="bg-slate-950 hover:bg-slate-900/70 transition-colors cursor-pointer border-b border-slate-800/50"
+                onClick={row.getToggleExpandedHandler()}
+              >
+                {row.getVisibleCells().map((cell) => {
+                  const align = (cell.column.columnDef.meta as { align?: string })?.align;
+                  return (
+                    <td
+                      key={cell.id}
+                      className={`px-4 py-3 tabular-nums whitespace-nowrap ${align === "right" ? "text-right text-slate-200" : align === "center" ? "text-center text-slate-400" : ""}`}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  );
+                })}
+              </tr>
+              {row.getIsExpanded() && (
+                <tr className="bg-slate-900/50 border-b border-slate-800/50">
+                  <td colSpan={row.getVisibleCells().length} className="px-8 py-4">
+                    <ExpandedNearDetail signal={row.original} />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ExpandedNearDetail({ signal }: { signal: NearSignal }) {
+  return (
+    <div className="text-xs">
+      {signal.rationale.length > 0 && (
+        <div>
+          <span className="text-slate-500 uppercase tracking-wide font-medium block mb-2">
+            Rationale
+          </span>
+          <ul className="list-disc list-inside text-slate-400 space-y-1">
+            {signal.rationale.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="mt-3">
+        <span className="text-slate-500 uppercase tracking-wide font-medium block mb-2">
+          Entry Detail
+        </span>
+        <div className="space-y-1 text-slate-300">
+          <p>Entry Trigger: <span className="text-blue-400 font-medium">${signal.entry_trigger.toFixed(2)}</span></p>
+          <p>Stop: <span className="text-red-400 font-medium">${signal.stop.toFixed(2)}</span></p>
+        </div>
+      </div>
     </div>
   );
 }
