@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, Fragment, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -39,6 +40,7 @@ interface ActiveSignal {
   pnlPct: number | null;
   outcome: "target_hit" | "stopped_out" | "open" | "pending";
   chartUrl: string | null;
+  closedDate: string | null;
 }
 
 interface NearSignal {
@@ -78,7 +80,14 @@ function DateNavigator({
   selectedDate: string | null;
   onSelect: (date: string) => void;
 }) {
+  const router = useRouter();
+
   if (dates.length === 0) return null;
+
+  const handleChange = (date: string) => {
+    onSelect(date);
+    router.push(`/signals/${date}`);
+  };
 
   return (
     <div className="flex items-center gap-2 mb-6">
@@ -88,7 +97,7 @@ function DateNavigator({
       <select
         id="archive-date-select"
         value={selectedDate ?? ""}
-        onChange={(e) => onSelect(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 max-h-60 overflow-y-auto"
       >
         {dates.map((date) => (
@@ -101,7 +110,13 @@ function DateNavigator({
   );
 }
 
-function MarketContextBanner({ context }: { context: MarketContext | null }) {
+function MarketContextBanner({
+  context,
+  signals,
+}: {
+  context: MarketContext | null;
+  signals: ActiveSignal[];
+}) {
   if (!context || !context.market_mood) return null;
 
   const moodColor =
@@ -110,6 +125,30 @@ function MarketContextBanner({ context }: { context: MarketContext | null }) {
       : context.market_mood === "bearish"
         ? "text-red-400"
         : "text-yellow-400";
+
+  // Compute trade summary from signals
+  const openCount = signals.filter((s) => s.outcome === "open").length;
+  const closedCount = signals.filter(
+    (s) => s.outcome === "target_hit" || s.outcome === "stopped_out"
+  ).length;
+  const closedSignals = signals.filter(
+    (s) =>
+      s.pnlPct != null &&
+      (s.outcome === "target_hit" || s.outcome === "stopped_out")
+  );
+  const openSignals = signals.filter(
+    (s) => s.pnlPct != null && s.outcome === "open"
+  );
+  const realizedPnl =
+    closedSignals.length > 0
+      ? closedSignals.reduce((sum, s) => sum + (s.pnlPct ?? 0), 0) /
+        closedSignals.length
+      : null;
+  const unrealizedPnl =
+    openSignals.length > 0
+      ? openSignals.reduce((sum, s) => sum + (s.pnlPct ?? 0), 0) /
+        openSignals.length
+      : null;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 mb-6">
@@ -126,8 +165,62 @@ function MarketContextBanner({ context }: { context: MarketContext | null }) {
           {context.breadth_pct != null ? `${Math.round(context.breadth_pct)}%` : "—"}{" "}
           <span className="text-slate-500">({context.breadth_label})</span>
         </span>
+        {signals.length > 0 && (
+          <>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-400">
+              {openCount} open · {closedCount} closed
+            </span>
+            {realizedPnl != null && (
+              <span
+                className={`font-medium ${realizedPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+              >
+                Realized: {realizedPnl >= 0 ? "+" : ""}
+                {realizedPnl.toFixed(2)}%
+              </span>
+            )}
+            {unrealizedPnl != null && (
+              <span
+                className={`font-medium ${unrealizedPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+              >
+                Unrealized: {unrealizedPnl >= 0 ? "+" : ""}
+                {unrealizedPnl.toFixed(2)}%
+              </span>
+            )}
+          </>
+        )}
       </div>
     </div>
+  );
+}
+
+const COLUMN_TOOLTIPS: Record<string, string> = {
+  Entry: "Price level to enter the trade",
+  Stop: "Price level to exit at a loss (stop-loss)",
+  Target: "Price level to exit at a profit",
+  Current: "Latest closing price from market data",
+  "P&L": "Profit or loss percentage from entry. Realized for closed trades, unrealized for open.",
+  R: "Risk/Reward ratio — how many R (risk units) the target represents",
+  Conf: "Model confidence score — higher means stronger signal alignment",
+  RS: "Relative Strength rating vs. the market (0–99)",
+  RVOL: "Relative Volume — today's volume vs. 20-day average. Above 1x = unusual activity.",
+  Outcome: "Trade result: target hit, stopped out, or still open",
+};
+
+function HeaderWithTooltip({ label }: { label: string }) {
+  const tooltip = COLUMN_TOOLTIPS[label];
+  if (!tooltip) return <>{label}</>;
+
+  return (
+    <span className="inline-flex items-center gap-1 group/tip relative">
+      {label}
+      <span className="text-slate-600 group-hover/tip:text-slate-400 cursor-help text-[10px]">
+        ⓘ
+      </span>
+      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2.5 py-1.5 rounded bg-slate-700 text-xs text-slate-200 normal-case tracking-normal whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-[100] shadow-lg">
+        {tooltip}
+      </span>
+    </span>
   );
 }
 
@@ -144,7 +237,7 @@ const OUTCOME_MAP = {
 
 const activeColumnHelper = createColumnHelper<ActiveSignal>();
 
-function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
+function ActiveSignalsTable({ signals, scanDate }: { signals: ActiveSignal[]; scanDate: string }) {
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [sorting, setSorting] = useState<SortingState>([
     { id: "confidence", desc: true },
@@ -187,22 +280,22 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
         ),
       }),
       activeColumnHelper.accessor("entry", {
-        header: "Entry",
+        header: () => <HeaderWithTooltip label="Entry" />,
         cell: (info) => `$${info.getValue().toFixed(2)}`,
         meta: { align: "right" },
       }),
       activeColumnHelper.accessor("stop", {
-        header: "Stop",
+        header: () => <HeaderWithTooltip label="Stop" />,
         cell: (info) => `$${info.getValue().toFixed(2)}`,
         meta: { align: "right" },
       }),
       activeColumnHelper.accessor("target", {
-        header: "Target",
+        header: () => <HeaderWithTooltip label="Target" />,
         cell: (info) => `$${info.getValue().toFixed(2)}`,
         meta: { align: "right" },
       }),
       activeColumnHelper.accessor("currentPrice", {
-        header: "Current",
+        header: () => <HeaderWithTooltip label="Current" />,
         cell: (info) => {
           const v = info.getValue();
           return v != null ? `$${v.toFixed(2)}` : "—";
@@ -210,7 +303,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
         meta: { align: "right" },
       }),
       activeColumnHelper.accessor("pnlPct", {
-        header: "P&L",
+        header: () => <HeaderWithTooltip label="P&L" />,
         cell: (info) => {
           const v = info.getValue();
           if (v == null) return <span className="text-slate-600">—</span>;
@@ -226,7 +319,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
       }),
       activeColumnHelper.display({
         id: "rMultiple",
-        header: "R",
+        header: () => <HeaderWithTooltip label="R" />,
         cell: ({ row }) => {
           const s = row.original;
           const risk = Math.abs(s.entry - s.stop);
@@ -237,16 +330,16 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
         meta: { align: "center" },
       }),
       activeColumnHelper.accessor("confidence", {
-        header: "Conf",
+        header: () => <HeaderWithTooltip label="Conf" />,
         cell: (info) => `${Math.round(info.getValue() * 100)}%`,
         meta: { align: "center" },
       }),
       activeColumnHelper.accessor("rs_rating", {
-        header: "RS",
+        header: () => <HeaderWithTooltip label="RS" />,
         meta: { align: "center" },
       }),
       activeColumnHelper.accessor("rvol", {
-        header: "RVOL",
+        header: () => <HeaderWithTooltip label="RVOL" />,
         cell: (info) => {
           const v = info.getValue();
           return v != null ? `${v.toFixed(1)}x` : "—";
@@ -254,7 +347,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
         meta: { align: "center" },
       }),
       activeColumnHelper.accessor("outcome", {
-        header: "Outcome",
+        header: () => <HeaderWithTooltip label="Outcome" />,
         cell: (info) => {
           const o = OUTCOME_MAP[info.getValue()];
           return <span className={`font-medium ${o.color}`}>{o.text}</span>;
@@ -321,7 +414,7 @@ function ActiveSignalsTable({ signals }: { signals: ActiveSignal[] }) {
               {row.getIsExpanded() && (
                 <tr className="bg-slate-900/50 border-b border-slate-800/50">
                   <td colSpan={row.getVisibleCells().length} className="px-8 py-4">
-                    <ExpandedActiveDetail signal={row.original} />
+                    <ExpandedActiveDetail signal={row.original} scanDate={scanDate} />
                   </td>
                 </tr>
               )}
@@ -366,13 +459,23 @@ function SignalChartImage({
   );
 }
 
-function ExpandedActiveDetail({ signal }: { signal: ActiveSignal }) {
+function ExpandedActiveDetail({ signal, scanDate }: { signal: ActiveSignal; scanDate: string }) {
   const riskDistance = Math.abs(signal.entry - signal.stop);
   const rewardDistance = Math.abs(signal.target - signal.entry);
   const rMultiple =
     signal.outcome !== "pending" && riskDistance > 0
       ? (rewardDistance / riskDistance).toFixed(1)
       : null;
+
+  // Compute days held: from scan date to close date (closed) or today (open)
+  const scanDateMs = new Date(scanDate + "T00:00:00").getTime();
+  let daysHeld: number | null = null;
+  if (signal.outcome === "open") {
+    daysHeld = Math.max(0, Math.round((Date.now() - scanDateMs) / (1000 * 60 * 60 * 24)));
+  } else if (signal.closedDate) {
+    const closedMs = new Date(signal.closedDate + "T00:00:00").getTime();
+    daysHeld = Math.max(0, Math.round((closedMs - scanDateMs) / (1000 * 60 * 60 * 24)));
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
@@ -407,6 +510,11 @@ function ExpandedActiveDetail({ signal }: { signal: ActiveSignal }) {
           {rMultiple && (
             <p>
               Risk/Reward: <span className="text-blue-400 font-medium">{rMultiple}R</span>
+            </p>
+          )}
+          {(signal.outcome === "target_hit" || signal.outcome === "stopped_out" || signal.outcome === "open") && daysHeld != null && (
+            <p>
+              Days Held: <span className="text-slate-200 font-medium">{daysHeld}</span>
             </p>
           )}
         </div>
@@ -481,17 +589,17 @@ function NearSignalsTable({ signals }: { signals: NearSignal[] }) {
         meta: { align: "right" },
       }),
       nearColumnHelper.accessor("stop", {
-        header: "Stop",
+        header: () => <HeaderWithTooltip label="Stop" />,
         cell: (info) => `$${info.getValue().toFixed(2)}`,
         meta: { align: "right" },
       }),
       nearColumnHelper.accessor("confidence", {
-        header: "Conf",
+        header: () => <HeaderWithTooltip label="Conf" />,
         cell: (info) => `${Math.round(info.getValue() * 100)}%`,
         meta: { align: "center" },
       }),
       nearColumnHelper.accessor("rs_rating", {
-        header: "RS",
+        header: () => <HeaderWithTooltip label="RS" />,
         meta: { align: "center" },
       }),
     ],
@@ -624,9 +732,10 @@ function DiscordCTA() {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export default function SignalArchiveContent() {
+export default function SignalArchiveContent({ initialDate }: { initialDate?: string }) {
+  const router = useRouter();
   const [dates, setDates] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(initialDate ?? null);
   const [entry, setEntry] = useState<ArchiveEntryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -659,7 +768,7 @@ export default function SignalArchiveContent() {
     }
   }, []);
 
-  // On mount: fetch available dates, auto-select most recent
+  // On mount: fetch available dates, auto-select based on initialDate or redirect to most recent
   useEffect(() => {
     async function init() {
       const controller = new AbortController();
@@ -678,9 +787,23 @@ export default function SignalArchiveContent() {
           setDates(dateList);
 
           if (dateList.length > 0) {
-            const mostRecent = dateList[0];
-            setSelectedDate(mostRecent);
-            await fetchSignalsForDate(mostRecent);
+            // If initialDate is provided and valid, use it
+            if (initialDate && dateList.includes(initialDate)) {
+              setSelectedDate(initialDate);
+              await fetchSignalsForDate(initialDate);
+            } else if (initialDate && !dateList.includes(initialDate)) {
+              // Invalid date — redirect to most recent
+              const mostRecent = dateList[0];
+              setSelectedDate(mostRecent);
+              router.replace(`/signals/${mostRecent}`);
+              await fetchSignalsForDate(mostRecent);
+            } else {
+              // No initialDate (bare /signals) — redirect to most recent
+              const mostRecent = dateList[0];
+              setSelectedDate(mostRecent);
+              router.replace(`/signals/${mostRecent}`);
+              await fetchSignalsForDate(mostRecent);
+            }
           } else {
             // No dates available
             setLoading(false);
@@ -696,7 +819,7 @@ export default function SignalArchiveContent() {
     }
 
     init();
-  }, [fetchSignalsForDate]);
+  }, [fetchSignalsForDate, initialDate, router]);
 
   // Handle date selection change
   const handleDateSelect = (date: string) => {
@@ -769,7 +892,7 @@ export default function SignalArchiveContent() {
 
       {entry && (
         <>
-          <MarketContextBanner context={entry.market_context} />
+          <MarketContextBanner context={entry.market_context} signals={entry.active} />
 
           {/* Active signals */}
           {entry.active.length > 0 && (
@@ -777,7 +900,7 @@ export default function SignalArchiveContent() {
               <h2 className="text-lg font-semibold text-white mb-4">
                 Active Opportunities
               </h2>
-              <ActiveSignalsTable signals={entry.active} />
+              <ActiveSignalsTable signals={entry.active} scanDate={entry.date} />
             </section>
           )}
 
