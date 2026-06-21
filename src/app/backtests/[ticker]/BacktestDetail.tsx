@@ -508,9 +508,9 @@ export default function BacktestDetail({ ticker }: { ticker: string }) {
       <h1 className="text-2xl font-bold text-white mb-6 mt-4">{data.ticker} Backtest</h1>
 
       {/* Metrics cards */}
-      {data.strategies.length > 0 && (
+      {data.strategies.filter((s) => s.metrics.trades > 0).length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {data.strategies.map((strat) => (
+          {data.strategies.filter((s) => s.metrics.trades > 0).map((strat) => (
             <MetricsCard key={strat.strategy} strategy={strat} />
           ))}
         </div>
@@ -518,7 +518,7 @@ export default function BacktestDetail({ ticker }: { ticker: string }) {
 
       {/* Chart */}
       {data.ohlc.length > 0 ? (
-        <CandlestickChart ohlc={data.ohlc} strategies={data.strategies} />
+        <CandlestickChart ohlc={data.ohlc} strategies={data.strategies.filter((s) => s.metrics.trades > 0)} />
       ) : (
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 flex items-center justify-center h-[450px]">
           <p className="text-slate-500">Price data unavailable for chart display.</p>

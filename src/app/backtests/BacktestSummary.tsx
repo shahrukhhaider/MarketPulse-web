@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,6 @@ interface BacktestManifest {
 
 type SortField =
   | "ticker"
-  | "strategy"
   | "return"
   | "win_rate"
   | "trades"
@@ -40,12 +39,7 @@ type SortField =
 
 type SortDirection = "asc" | "desc";
 
-function formatStrategy(strategy: string): string {
-  return strategy
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
+const PAGE_SIZE = 25;
 
 function formatReturn(value: number): string {
   const sign = value >= 0 ? "+" : "";
@@ -73,8 +67,6 @@ function getSortValue(entry: BacktestEntry, field: SortField): string | number {
   switch (field) {
     case "ticker":
       return entry.ticker;
-    case "strategy":
-      return entry.strategy;
     case "return":
       return entry.return;
     case "win_rate":
@@ -90,6 +82,39 @@ function getSortValue(entry: BacktestEntry, field: SortField): string | number {
     default:
       return 0;
   }
+}
+
+/**
+ * Compute which page numbers to display with ellipsis logic.
+ * Shows first page, last page, and a window of ±2 around current page.
+ * Returns an array of page numbers and null (representing ellipsis).
+ */
+function getPageNumbers(currentPage: number, totalPages: number): (number | null)[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages: (number | null)[] = [];
+  const windowStart = Math.max(2, currentPage - 2);
+  const windowEnd = Math.min(totalPages - 1, currentPage + 2);
+
+  pages.push(1);
+
+  if (windowStart > 2) {
+    pages.push(null); // ellipsis
+  }
+
+  for (let i = windowStart; i <= windowEnd; i++) {
+    pages.push(i);
+  }
+
+  if (windowEnd < totalPages - 1) {
+    pages.push(null); // ellipsis
+  }
+
+  pages.push(totalPages);
+
+  return pages;
 }
 
 // ---------------------------------------------------------------------------
@@ -109,6 +134,7 @@ export default function BacktestSummary() {
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("return");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     async function fetchBacktests() {
@@ -141,15 +167,27 @@ export default function BacktestSummary() {
       setSortField(field);
       setSortDirection("desc");
     }
+    setPage(1);
   }
 
   function handleRowClick(ticker: string) {
     router.push(`/backtests/${ticker}`);
   }
 
+  // Deduplicate: keep only the best entry (highest return) per ticker
+  const deduplicatedEntries = data
+    ? Object.values(
+        data.entries.reduce<Record<string, BacktestEntry>>((acc, entry) => {
+          if (!acc[entry.ticker] || entry.return > acc[entry.ticker].return) {
+            acc[entry.ticker] = entry;
+          }
+          return acc;
+        }, {})
+      )
+    : [];
+
   // Sort entries
-  const sortedEntries = data
-    ? [...data.entries].sort((a, b) => {
+  const sortedEntries = [...deduplicatedEntries].sort((a, b) => {
         const aVal = getSortValue(a, sortField);
         const bVal = getSortValue(b, sortField);
 
@@ -162,8 +200,13 @@ export default function BacktestSummary() {
         const aNum = aVal as number;
         const bNum = bVal as number;
         return sortDirection === "asc" ? aNum - bNum : bNum - aNum;
-      })
-    : [];
+      });
+
+  // Pagination
+  const totalPages = Math.ceil(sortedEntries.length / PAGE_SIZE);
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const endIndex = Math.min(startIndex + PAGE_SIZE, sortedEntries.length);
+  const paginatedEntries = sortedEntries.slice(startIndex, endIndex);
 
   // Loading skeleton
   if (loading) {
@@ -244,8 +287,8 @@ export default function BacktestSummary() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold">Backtest Results</h1>
-          <p className="text-slate-400 mt-2">
-            Walk-forward validated strategy performance across all tickers.
+          <p className="text-slate-400 mt-2 max-w-3xl text-sm leading-relaxed">
+            These results use <span className="text-slate-200">walk-forward validation</span>: we take 5 years of price data, train the strategy on the first 70% (~3.5 years), then test it on the remaining 30% (~1.5 years) that it never saw during training. The numbers below are from that unseen test period only — no overfitting, no cherry-picking.
           </p>
           {data.generated_at && (
             <p className="text-xs text-slate-500 mt-1">
@@ -259,6 +302,11 @@ export default function BacktestSummary() {
           )}
         </div>
 
+        {/* Summary Stats */}
+        {deduplicatedEntries.length > 0 && (
+          <SummaryStats entries={deduplicatedEntries} />
+        )}
+
         {/* Table */}
         <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
           <div className="overflow-x-auto">
@@ -268,13 +316,6 @@ export default function BacktestSummary() {
                   <SortableHeader
                     label="Ticker"
                     field="ticker"
-                    currentField={sortField}
-                    direction={sortDirection}
-                    onClick={handleSort}
-                  />
-                  <SortableHeader
-                    label="Strategy"
-                    field="strategy"
                     currentField={sortField}
                     direction={sortDirection}
                     onClick={handleSort}
@@ -324,18 +365,15 @@ export default function BacktestSummary() {
                 </tr>
               </thead>
               <tbody>
-                {sortedEntries.map((entry, idx) => {
+                {paginatedEntries.map((entry) => {
                   return (
                     <tr
-                      key={`${entry.ticker}-${entry.strategy}-${idx}`}
+                      key={entry.ticker}
                       onClick={() => handleRowClick(entry.ticker)}
                       className="border-b border-slate-800/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
                         {entry.ticker}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
-                        {formatStrategy(entry.strategy)}
                       </td>
                       <td
                         className={`px-4 py-3 font-medium whitespace-nowrap ${
@@ -365,8 +403,117 @@ export default function BacktestSummary() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800">
+              <p className="text-sm text-slate-400">
+                Showing {startIndex + 1}–{endIndex} of {sortedEntries.length}
+              </p>
+              <div className="flex items-center gap-1">
+                {/* Previous button */}
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-2 py-1 text-sm rounded text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Previous page"
+                >
+                  ←
+                </button>
+
+                {/* Page numbers */}
+                {getPageNumbers(page, totalPages).map((pageNum, idx) =>
+                  pageNum === null ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 py-1 text-sm text-slate-500">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${
+                        pageNum === page
+                          ? "bg-indigo-600 text-white"
+                          : "text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
+                )}
+
+                {/* Next button */}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="px-2 py-1 text-sm rounded text-slate-300 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Next page"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Summary Stats Component
+// ---------------------------------------------------------------------------
+
+function SummaryStats({ entries }: { entries: BacktestEntry[] }) {
+  const stats = useMemo(() => {
+    const count = entries.length;
+    const avgReturn = entries.reduce((s, e) => s + e.return, 0) / (count || 1);
+    const avgWinRate = entries.reduce((s, e) => s + e.win_rate, 0) / (count || 1);
+    const totalTrades = entries.reduce((s, e) => s + e.trades, 0);
+    const avgMaxDD = entries.reduce((s, e) => s + e.max_drawdown, 0) / (count || 1);
+    const avgSharpe = entries.reduce((s, e) => s + e.sharpe, 0) / (count || 1);
+    return { count, avgReturn, avgWinRate, totalTrades, avgMaxDD, avgSharpe };
+  }, [entries]);
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-center">
+        <p className="text-xs text-slate-500 mb-1">Avg Return</p>
+        <p
+          className={`text-lg font-bold ${
+            stats.avgReturn >= 0 ? "text-green-400" : "text-red-400"
+          }`}
+        >
+          {stats.avgReturn >= 0 ? "+" : ""}
+          {stats.avgReturn.toFixed(1)}%
+        </p>
+      </div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-center">
+        <p className="text-xs text-slate-500 mb-1">Avg Win Rate</p>
+        <p className="text-lg font-bold text-white">
+          {(stats.avgWinRate * 100).toFixed(0)}%
+        </p>
+      </div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-center">
+        <p className="text-xs text-slate-500 mb-1">Total Trades</p>
+        <p className="text-lg font-bold text-white">{stats.totalTrades}</p>
+      </div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-center">
+        <p className="text-xs text-slate-500 mb-1">Avg Max DD</p>
+        <p className="text-lg font-bold text-white">
+          {stats.avgMaxDD.toFixed(1)}%
+        </p>
+      </div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-center">
+        <p className="text-xs text-slate-500 mb-1">Avg Sharpe</p>
+        <p className="text-lg font-bold text-white">
+          {stats.avgSharpe.toFixed(2)}
+        </p>
+      </div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-center">
+        <p className="text-xs text-slate-500 mb-1">Tickers</p>
+        <p className="text-lg font-bold text-white">{stats.count}</p>
+      </div>
     </div>
   );
 }
