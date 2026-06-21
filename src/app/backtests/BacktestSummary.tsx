@@ -32,7 +32,6 @@ type SortField =
   | "ticker"
   | "strategy"
   | "return"
-  | "vs_benchmark"
   | "win_rate"
   | "trades"
   | "max_drawdown"
@@ -78,8 +77,6 @@ function getSortValue(entry: BacktestEntry, field: SortField): string | number {
       return entry.strategy;
     case "return":
       return entry.return;
-    case "vs_benchmark":
-      return entry.return - entry.benchmark;
     case "win_rate":
       return entry.win_rate;
     case "trades":
@@ -290,13 +287,6 @@ export default function BacktestSummary() {
                     onClick={handleSort}
                   />
                   <SortableHeader
-                    label="vs Bench"
-                    field="vs_benchmark"
-                    currentField={sortField}
-                    direction={sortDirection}
-                    onClick={handleSort}
-                  />
-                  <SortableHeader
                     label="Win Rate"
                     field="win_rate"
                     currentField={sortField}
@@ -335,7 +325,6 @@ export default function BacktestSummary() {
               </thead>
               <tbody>
                 {sortedEntries.map((entry, idx) => {
-                  const vsBenchmark = entry.return - entry.benchmark;
                   return (
                     <tr
                       key={`${entry.ticker}-${entry.strategy}-${idx}`}
@@ -354,13 +343,6 @@ export default function BacktestSummary() {
                         }`}
                       >
                         {formatReturn(entry.return)}
-                      </td>
-                      <td
-                        className={`px-4 py-3 whitespace-nowrap ${
-                          vsBenchmark >= 0 ? "text-green-400" : "text-red-400"
-                        }`}
-                      >
-                        {formatReturn(vsBenchmark)}
                       </td>
                       <td className="px-4 py-3 text-slate-300 whitespace-nowrap">
                         {formatWinRate(entry.win_rate)}

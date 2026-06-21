@@ -151,15 +151,6 @@ function MetricsCard({ strategy }: { strategy: StrategyData }) {
             {m.max_drawdown.toFixed(1)}%
           </p>
         </div>
-        <div>
-          <p className="text-slate-500">vs Bench</p>
-          <p
-            className={`font-semibold ${m.return - m.benchmark >= 0 ? "text-green-400" : "text-red-400"}`}
-          >
-            {m.return - m.benchmark >= 0 ? "+" : ""}
-            {(m.return - m.benchmark).toFixed(1)}%
-          </p>
-        </div>
       </div>
     </div>
   );
