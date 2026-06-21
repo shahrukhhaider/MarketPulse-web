@@ -52,6 +52,11 @@ export default function RootLayout({
                 </Link>
               </li>
               <li>
+                <Link href="/backtests" className="hover:text-white transition-colors">
+                  Backtests
+                </Link>
+              </li>
+              <li>
                 <Link href="/learn" className="hover:text-white transition-colors">
                   Learn
                 </Link>

@@ -12,6 +12,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "gray-matter": "^4.0.3",
+    "lightweight-charts": "^4.2.2",
     "next": "16.2.7",
     "next-mdx-remote": "^6.0.0",
     "next-sitemap": "^4.2.3",
