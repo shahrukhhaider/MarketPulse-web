@@ -24,6 +24,7 @@ interface WinningTrade {
   ticker: string;
   strategy: string;
   entryDate: string;
+  exitDate?: string;        // YYYY-MM-DD when target was hit
   entryPrice: number;
   stopPrice: number;
   targetPrice: number;
@@ -320,7 +321,7 @@ export default function MarketContent() {
             <div>
               <h2 className="text-2xl font-bold">Winning Trades</h2>
               <p className="text-slate-400 text-sm mt-1">
-                Signals that hit their target — verified by the daily pipeline.
+                Past trade signals that hit their profit target. Updated weekly.
               </p>
             </div>
 
@@ -403,8 +404,18 @@ export default function MarketContent() {
                       </span>
                       <span className="text-slate-500">·</span>
                       <span className="text-slate-500">
-                        Signaled {trade.entryDate}
+                        {trade.entryDate} → {trade.exitDate ?? "—"}
                       </span>
+                      {trade.exitDate && (
+                        <span className="text-slate-500">
+                          {(() => {
+                            const d1 = new Date(trade.entryDate + "T12:00:00");
+                            const d2 = new Date(trade.exitDate + "T12:00:00");
+                            const days = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+                            return `${days}d hold`;
+                          })()}
+                        </span>
+                      )}
                       <span className="text-green-500/80 text-xs ml-auto">
                         ✓ Target hit
                       </span>
@@ -418,9 +429,9 @@ export default function MarketContent() {
                         </span>
                       </div>
                       <div>
-                        <span className="text-slate-500 block">Current</span>
+                        <span className="text-slate-500 block">Exit</span>
                         <span className="text-green-400 font-medium">
-                          ${trade.currentPrice.toFixed(2)}
+                          ${trade.targetPrice.toFixed(2)}
                         </span>
                       </div>
                       <div>
