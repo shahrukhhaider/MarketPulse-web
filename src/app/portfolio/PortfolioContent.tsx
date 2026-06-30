@@ -14,6 +14,7 @@ interface PortfolioStats {
   wins: number;
   losses: number;
   expired: number;
+  breakeven: number;
   avg_r_multiple: number;
   total_pnl: number;
   expectancy: number;
@@ -39,7 +40,7 @@ interface ClosedTrade {
   entry_price: number;
   stop_price: number;
   target_price: number;
-  outcome: "won" | "lost" | "expired";
+  outcome: "won" | "lost" | "expired" | "breakeven";
   outcome_date: string;
   outcome_price: number | null;
   pnl_pct: number;
@@ -87,6 +88,12 @@ function outcomeBadge(outcome: string) {
           Lost
         </span>
       );
+    case "breakeven":
+      return (
+        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-900/50 text-blue-300">
+          Breakeven
+        </span>
+      );
     default:
       return (
         <span className="px-2 py-0.5 rounded text-xs font-medium bg-zinc-700 text-zinc-300">
@@ -116,7 +123,7 @@ function StatsCards({ stats }: { stats: PortfolioStats }) {
         label="Win Rate"
         value={`${Math.round(stats.win_rate * 100)}%`}
         color={winRateGood ? "text-emerald-400" : "text-red-400"}
-        sub={`${stats.wins}W / ${stats.losses}L`}
+        sub={`${stats.wins}W / ${stats.losses}L${stats.breakeven > 0 ? ` / ${stats.breakeven}BE` : ''}`}
       />
       <StatCard
         label="Total Trades"
