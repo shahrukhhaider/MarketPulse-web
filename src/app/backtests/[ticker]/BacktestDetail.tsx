@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import Link from "next/link";
+import { useEffect, useState, useRef, useCallback } from "react";import Link from "next/link";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -136,91 +135,107 @@ function CombinedBanner({ combined, ticker }: { combined: CombinedMetrics; ticke
 }
 
 // ---------------------------------------------------------------------------
-// Strategy Breakdown Table
+// Strategy Breakdown Table — shows individual trades per strategy
 // ---------------------------------------------------------------------------
 
 function StrategyBreakdownTable({ strategies }: { strategies: StrategyData[] }) {
-  // Show all strategies that have trades; dimmed if negative return
-  const visible = strategies.filter((s) => s.metrics.trades > 0);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Only show strategies that have trades (all_trades or oos_trades)
+  const visible = strategies.filter((s) => {
+    const trades = s.all_trades ?? s.oos_trades ?? [];
+    return trades.length > 0;
+  });
+
   if (visible.length === 0) return null;
 
   return (
-    <div className="mt-6">
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-        Strategy Breakdown
+    <div className="mt-6 space-y-3">
+      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+        Trade History
       </h2>
-      <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-800">
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Strategy
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Return
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Win Rate
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Trades
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Max DD
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Sharpe
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((strat) => {
-                const isPassing = strat.metrics.return >= 0;
-                const returnColor = strat.metrics.return >= 0 ? "text-green-400" : "text-red-400";
-                const rowClass = isPassing
-                  ? "border-b border-slate-800/50"
-                  : "border-b border-slate-800/50 opacity-50";
+      {visible.map((strat) => {
+        const trades = strat.all_trades ?? strat.oos_trades ?? [];
+        const isPassing = strat.metrics.return >= 0 && strat.metrics.trades > 0;
+        const color = getStrategyColor(strat.strategy);
+        const isExpanded = expanded === strat.strategy;
+        const wins = trades.filter((t) => t.won).length;
+        const losses = trades.length - wins;
 
-                return (
-                  <tr key={strat.strategy} className={rowClass}>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: getStrategyColor(strat.strategy) }}
-                        />
-                        <span className={isPassing ? "text-white font-medium" : "text-slate-400"}>
-                          {formatStrategyName(strat.strategy)}
-                        </span>
-                        {!isPassing && (
-                          <span className="text-xs text-slate-600 ml-1">excluded</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className={`px-4 py-3 text-right font-medium whitespace-nowrap ${returnColor}`}>
-                      {strat.metrics.return >= 0 ? "+" : ""}
-                      {strat.metrics.return.toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-300 whitespace-nowrap">
-                      {Math.round(strat.metrics.win_rate * 100)}%
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-300 whitespace-nowrap">
-                      {strat.metrics.trades}
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-300 whitespace-nowrap">
-                      {strat.metrics.max_drawdown.toFixed(1)}%
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-300 whitespace-nowrap">
-                      {strat.metrics.sharpe.toFixed(2)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        return (
+          <div
+            key={strat.strategy}
+            className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden"
+          >
+            {/* Strategy header row — click to expand */}
+            <button
+              onClick={() => setExpanded(isExpanded ? null : strat.strategy)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-800/40 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                <span className={`text-sm font-medium ${isPassing ? "text-white" : "text-slate-500"}`}>
+                  {formatStrategyName(strat.strategy)}
+                </span>
+                {!isPassing && (
+                  <span className="text-xs text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">excluded</span>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-xs text-slate-400">
+                <span className="text-green-400">{wins}W</span>
+                <span className="text-red-400">{losses}L</span>
+                <span className={strat.metrics.return >= 0 ? "text-green-400" : "text-red-400"}>
+                  {strat.metrics.return >= 0 ? "+" : ""}{strat.metrics.return.toFixed(1)}%
+                </span>
+                <span className="text-slate-500 ml-1">{isExpanded ? "▲" : "▼"}</span>
+              </div>
+            </button>
+
+            {/* Trade rows */}
+            {isExpanded && (
+              <div className="border-t border-slate-800 overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800/60 bg-slate-900/60">
+                      <th className="px-4 py-2 text-left text-slate-500 font-medium">Entry</th>
+                      <th className="px-4 py-2 text-left text-slate-500 font-medium">Exit</th>
+                      <th className="px-4 py-2 text-right text-slate-500 font-medium">Entry $</th>
+                      <th className="px-4 py-2 text-right text-slate-500 font-medium">Exit $</th>
+                      <th className="px-4 py-2 text-right text-slate-500 font-medium">P&L %</th>
+                      <th className="px-4 py-2 text-center text-slate-500 font-medium">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trades.map((trade, i) => {
+                      const pnlPct = ((trade.exit_price - trade.entry_price) / trade.entry_price) * 100;
+                      return (
+                        <tr key={i} className="border-b border-slate-800/30 hover:bg-slate-800/20">
+                          <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{trade.entry_date}</td>
+                          <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{trade.exit_date}</td>
+                          <td className="px-4 py-2 text-right text-slate-300 whitespace-nowrap">
+                            ${trade.entry_price.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-2 text-right text-slate-300 whitespace-nowrap">
+                            ${trade.exit_price.toFixed(2)}
+                          </td>
+                          <td className={`px-4 py-2 text-right font-medium whitespace-nowrap ${pnlPct >= 0 ? "text-green-400" : "text-red-400"}`}>
+                            {pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${trade.won ? "bg-green-900/40 text-green-400" : "bg-red-900/40 text-red-400"}`}>
+                              {trade.won ? "Win" : "Loss"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -325,6 +340,29 @@ function CandlestickChart({
         }))
       );
 
+      // Build a Set of valid trading dates from OHLC for marker snapping
+      const tradingDates = new Set(ohlc.map((bar) => bar.time));
+
+      // Snap a date string to the nearest trading day in the series
+      function snapToTradingDay(date: string): string | null {
+        if (tradingDates.has(date)) return date;
+        // Search forward up to 5 days for next trading day
+        const d = new Date(date + "T00:00:00Z");
+        for (let i = 1; i <= 5; i++) {
+          d.setUTCDate(d.getUTCDate() + 1);
+          const candidate = d.toISOString().slice(0, 10);
+          if (tradingDates.has(candidate)) return candidate;
+        }
+        // Search backward up to 5 days
+        const d2 = new Date(date + "T00:00:00Z");
+        for (let i = 1; i <= 5; i++) {
+          d2.setUTCDate(d2.getUTCDate() - 1);
+          const candidate = d2.toISOString().slice(0, 10);
+          if (tradingDates.has(candidate)) return candidate;
+        }
+        return null;
+      }
+
       // Trade markers — all strategies
       const markers: Array<{
         time: import("lightweight-charts").Time;
@@ -335,23 +373,30 @@ function CandlestickChart({
       }> = [];
 
       for (const strat of strategies) {
-        if (strat.metrics.trades === 0) continue;
+        const trades = strat.all_trades ?? strat.oos_trades ?? [];
+        if (trades.length === 0) continue;
         const color = getStrategyColor(strat.strategy);
-        for (const trade of (strat.all_trades ?? [])) {
-          markers.push({
-            time: trade.entry_date as unknown as import("lightweight-charts").Time,
-            position: "belowBar",
-            color,
-            shape: "arrowUp",
-            text: formatStrategyName(strat.strategy),
-          });
-          markers.push({
-            time: trade.exit_date as unknown as import("lightweight-charts").Time,
-            position: "aboveBar",
-            color: trade.won ? color : "#ef5350",
-            shape: "arrowDown",
-            text: trade.won ? "Win" : "Loss",
-          });
+        for (const trade of trades) {
+          const entryDay = snapToTradingDay(trade.entry_date);
+          const exitDay = snapToTradingDay(trade.exit_date);
+          if (entryDay) {
+            markers.push({
+              time: entryDay as unknown as import("lightweight-charts").Time,
+              position: "belowBar",
+              color,
+              shape: "arrowUp",
+              text: "▲",
+            });
+          }
+          if (exitDay) {
+            markers.push({
+              time: exitDay as unknown as import("lightweight-charts").Time,
+              position: "aboveBar",
+              color: trade.won ? color : "#ef5350",
+              shape: "arrowDown",
+              text: "▼",
+            });
+          }
         }
       }
 
@@ -430,7 +475,7 @@ function CandlestickChart({
                   style={{ backgroundColor: getStrategyColor(strat.strategy) }}
                 />
                 <span>{formatStrategyName(strat.strategy)}</span>
-                <span className="text-slate-600">({(strat.all_trades ?? []).length} trades)</span>
+                <span className="text-slate-600">({(strat.all_trades ?? strat.oos_trades ?? []).length} trades)</span>
               </div>
             ))}
         </div>
