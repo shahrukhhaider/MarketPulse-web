@@ -260,7 +260,7 @@ function CandlestickChart({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
-  const [activeRange, setActiveRange] = useState<ZoomRange>("6M");
+  const [activeRange, setActiveRange] = useState<ZoomRange>("All");
   const [chartReady, setChartReady] = useState(false);
 
   const applyZoom = useCallback(
@@ -358,14 +358,8 @@ function CandlestickChart({
       markers.sort((a, b) => (a.time as string).localeCompare(b.time as string));
       candleSeries.setMarkers(markers);
 
-      // Default zoom
-      const dateRange = getDateRange("6M", ohlc);
-      if (dateRange) {
-        chart.timeScale().setVisibleRange({
-          from: dateRange.from as unknown as import("lightweight-charts").Time,
-          to: dateRange.to as unknown as import("lightweight-charts").Time,
-        });
-      }
+      // Default zoom — fit all content so all trade markers are visible
+      chart.timeScale().fitContent();
 
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
