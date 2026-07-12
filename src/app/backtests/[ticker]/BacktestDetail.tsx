@@ -27,7 +27,10 @@ interface StrategyData {
   strategy: string;
   metrics: StrategyMetrics;
   last_tuned_at: string;
-  trades: TradeEntry[];
+  /** All trades from full backtest — used for chart markers */
+  all_trades: TradeEntry[];
+  /** OOS trades only — available for reference, metrics already reflect these */
+  oos_trades: TradeEntry[];
 }
 
 interface CombinedMetrics {
@@ -334,7 +337,7 @@ function CandlestickChart({
       for (const strat of strategies) {
         if (strat.metrics.trades === 0) continue;
         const color = getStrategyColor(strat.strategy);
-        for (const trade of strat.trades) {
+        for (const trade of strat.all_trades) {
           markers.push({
             time: trade.entry_date as unknown as import("lightweight-charts").Time,
             position: "belowBar",
@@ -433,7 +436,7 @@ function CandlestickChart({
                   style={{ backgroundColor: getStrategyColor(strat.strategy) }}
                 />
                 <span>{formatStrategyName(strat.strategy)}</span>
-                <span className="text-slate-600">({strat.trades.length} trades)</span>
+                <span className="text-slate-600">({strat.all_trades.length} trades)</span>
               </div>
             ))}
         </div>
