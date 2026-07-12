@@ -275,6 +275,9 @@ function CandlestickChart({
   const chartContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const candleSeriesRef = useRef<any>(null);
+  const tradingDatesRef = useRef<Set<string>>(new Set());
   const [activeRange, setActiveRange] = useState<ZoomRange>("All");
   const [chartReady, setChartReady] = useState(false);
 
@@ -296,6 +299,7 @@ function CandlestickChart({
     [ohlc]
   );
 
+  // Effect 1: init chart + candlestick series (only when ohlc changes)
   useEffect(() => {
     if (!chartContainerRef.current || ohlc.length === 0) return;
     let disposed = false;
@@ -330,80 +334,20 @@ function CandlestickChart({
         wickUpColor: "#26a69a",
         wickDownColor: "#ef5350",
       });
-      candleSeries.setData(
-        ohlc.map((bar) => ({
-          time: bar.time as unknown as import("lightweight-charts").Time,
-          open: bar.open,
-          high: bar.high,
-          low: bar.low,
-          close: bar.close,
-        }))
-      );
 
-      // Build a Set of valid trading dates from OHLC for marker snapping
-      const tradingDates = new Set(ohlc.map((bar) => bar.time));
+      const chartData = ohlc.map((bar) => ({
+        time: bar.time as unknown as import("lightweight-charts").Time,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+      }));
+      candleSeries.setData(chartData);
+      candleSeriesRef.current = candleSeries;
 
-      // Snap a date string to the nearest trading day in the series
-      function snapToTradingDay(date: string): string | null {
-        if (tradingDates.has(date)) return date;
-        // Search forward up to 5 days for next trading day
-        const d = new Date(date + "T00:00:00Z");
-        for (let i = 1; i <= 5; i++) {
-          d.setUTCDate(d.getUTCDate() + 1);
-          const candidate = d.toISOString().slice(0, 10);
-          if (tradingDates.has(candidate)) return candidate;
-        }
-        // Search backward up to 5 days
-        const d2 = new Date(date + "T00:00:00Z");
-        for (let i = 1; i <= 5; i++) {
-          d2.setUTCDate(d2.getUTCDate() - 1);
-          const candidate = d2.toISOString().slice(0, 10);
-          if (tradingDates.has(candidate)) return candidate;
-        }
-        return null;
-      }
+      // Store valid trading dates for marker snapping
+      tradingDatesRef.current = new Set(ohlc.map((bar) => bar.time));
 
-      // Trade markers — all strategies
-      const markers: Array<{
-        time: import("lightweight-charts").Time;
-        position: "aboveBar" | "belowBar";
-        color: string;
-        shape: "arrowUp" | "arrowDown";
-        text: string;
-      }> = [];
-
-      for (const strat of strategies) {
-        const trades = strat.all_trades ?? strat.oos_trades ?? [];
-        if (trades.length === 0) continue;
-        const color = getStrategyColor(strat.strategy);
-        for (const trade of trades) {
-          const entryDay = snapToTradingDay(trade.entry_date);
-          const exitDay = snapToTradingDay(trade.exit_date);
-          if (entryDay) {
-            markers.push({
-              time: entryDay as unknown as import("lightweight-charts").Time,
-              position: "belowBar",
-              color,
-              shape: "arrowUp",
-              text: "▲",
-            });
-          }
-          if (exitDay) {
-            markers.push({
-              time: exitDay as unknown as import("lightweight-charts").Time,
-              position: "aboveBar",
-              color: trade.won ? color : "#ef5350",
-              shape: "arrowDown",
-              text: "▼",
-            });
-          }
-        }
-      }
-
-      markers.sort((a, b) => (a.time as string).localeCompare(b.time as string));
-      candleSeries.setMarkers(markers);
-
-      // Default zoom — fit all content so all trade markers are visible
       chart.timeScale().fitContent();
 
       const resizeObserver = new ResizeObserver((entries) => {
@@ -419,6 +363,7 @@ function CandlestickChart({
         resizeObserver.disconnect();
         chart.remove();
         chartRef.current = null;
+        candleSeriesRef.current = null;
       };
     }
 
@@ -427,7 +372,70 @@ function CandlestickChart({
       disposed = true;
       cleanup.then((fn) => fn?.());
     };
-  }, [ohlc, strategies]);
+  }, [ohlc]);
+
+  // Effect 2: set markers whenever strategies or chart readiness changes
+  useEffect(() => {
+    if (!candleSeriesRef.current || !chartReady) return;
+
+    const tradingDates = tradingDatesRef.current;
+
+    function snapToTradingDay(date: string): string | null {
+      if (tradingDates.has(date)) return date;
+      const d = new Date(date + "T00:00:00Z");
+      for (let i = 1; i <= 5; i++) {
+        d.setUTCDate(d.getUTCDate() + 1);
+        const c = d.toISOString().slice(0, 10);
+        if (tradingDates.has(c)) return c;
+      }
+      const d2 = new Date(date + "T00:00:00Z");
+      for (let i = 1; i <= 5; i++) {
+        d2.setUTCDate(d2.getUTCDate() - 1);
+        const c = d2.toISOString().slice(0, 10);
+        if (tradingDates.has(c)) return c;
+      }
+      return null;
+    }
+
+    const markers: Array<{
+      time: import("lightweight-charts").Time;
+      position: "aboveBar" | "belowBar";
+      color: string;
+      shape: "arrowUp" | "arrowDown";
+      text: string;
+    }> = [];
+
+    for (const strat of strategies) {
+      const trades = strat.all_trades ?? strat.oos_trades ?? [];
+      if (trades.length === 0) continue;
+      const color = getStrategyColor(strat.strategy);
+      for (const trade of trades) {
+        const entryDay = snapToTradingDay(trade.entry_date);
+        const exitDay = snapToTradingDay(trade.exit_date);
+        if (entryDay) {
+          markers.push({
+            time: entryDay as unknown as import("lightweight-charts").Time,
+            position: "belowBar",
+            color,
+            shape: "arrowUp",
+            text: "▲",
+          });
+        }
+        if (exitDay) {
+          markers.push({
+            time: exitDay as unknown as import("lightweight-charts").Time,
+            position: "aboveBar",
+            color: trade.won ? color : "#ef5350",
+            shape: "arrowDown",
+            text: "▼",
+          });
+        }
+      }
+    }
+
+    markers.sort((a, b) => (a.time as string).localeCompare(b.time as string));
+    candleSeriesRef.current.setMarkers(markers);
+  }, [strategies, chartReady]);
 
   const zoomRanges: ZoomRange[] = ["1M", "3M", "6M", "1Y", "All"];
 
