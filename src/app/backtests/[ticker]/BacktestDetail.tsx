@@ -12,6 +12,7 @@ interface TradeEntry {
   entry_price: number;
   exit_price: number;
   won: boolean;
+  pnl_pct?: number; // direction-adjusted P&L from backtest engine; absent on older profiles
 }
 
 interface StrategyMetrics {
@@ -141,10 +142,11 @@ function CombinedBanner({ combined, ticker }: { combined: CombinedMetrics; ticke
 function StrategyBreakdownTable({ strategies }: { strategies: StrategyData[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Only show strategies that have trades (all_trades or oos_trades)
+  // Only show strategies that have trades with reliable pnl_pct data
   const visible = strategies.filter((s) => {
     const trades = s.all_trades ?? s.oos_trades ?? [];
-    return trades.length > 0;
+    // Only show if trades have pnl_pct (set by current engine, reliable direction-adjusted P&L)
+    return trades.length > 0 && trades[0].pnl_pct !== undefined;
   });
 
   if (visible.length === 0) return null;
@@ -207,10 +209,11 @@ function StrategyBreakdownTable({ strategies }: { strategies: StrategyData[] }) 
                   </thead>
                   <tbody>
                     {trades.map((trade, i) => {
-                      // Use absolute price move magnitude, sign from won
-                      // (bear breakdown shorts profit when price falls — raw price math gives wrong sign)
-                      const rawMove = Math.abs((trade.exit_price - trade.entry_price) / trade.entry_price) * 100;
-                      const pnlPct = trade.won ? rawMove : -rawMove;
+                      // Use engine-computed pnl_pct when available (direction-adjusted for shorts).
+                      // Fall back to absolute price move magnitude + won sign for older profiles.
+                      const pnlPct = trade.pnl_pct !== undefined
+                        ? trade.pnl_pct
+                        : (trade.won ? 1 : -1) * Math.abs((trade.exit_price - trade.entry_price) / trade.entry_price) * 100;
                       return (
                         <tr key={i} className="border-b border-slate-800/30 hover:bg-slate-800/20">
                           <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{trade.entry_date}</td>
@@ -409,7 +412,8 @@ function CandlestickChart({
     }> = [];
 
     for (const strat of strategies) {
-      const trades = strat.all_trades ?? strat.oos_trades ?? [];
+      // Only use trades that have pnl_pct (reliable direction-adjusted data)
+      const trades = (strat.all_trades ?? strat.oos_trades ?? []).filter(t => t.pnl_pct !== undefined);
       if (trades.length === 0) continue;
       const color = getStrategyColor(strat.strategy);
       for (const trade of trades) {
@@ -479,16 +483,21 @@ function CandlestickChart({
         <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-slate-400">
           {strategies
             .filter((s) => s.metrics.trades > 0)
-            .map((strat) => (
-              <div key={strat.strategy} className="flex items-center gap-1.5">
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: getStrategyColor(strat.strategy) }}
-                />
-                <span>{formatStrategyName(strat.strategy)}</span>
-                <span className="text-slate-600">({(strat.all_trades ?? strat.oos_trades ?? []).length} trades)</span>
-              </div>
-            ))}
+            .map((strat) => {
+              const trades = (strat.all_trades ?? strat.oos_trades ?? []).filter(t => t.pnl_pct !== undefined);
+              return (
+                <div key={strat.strategy} className="flex items-center gap-1.5">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: getStrategyColor(strat.strategy) }}
+                  />
+                  <span>{formatStrategyName(strat.strategy)}</span>
+                  {trades.length > 0 && (
+                    <span className="text-slate-600">({trades.length} trades)</span>
+                  )}
+                </div>
+              );
+            })}
         </div>
       )}
     </div>
