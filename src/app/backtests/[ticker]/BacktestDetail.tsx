@@ -207,7 +207,10 @@ function StrategyBreakdownTable({ strategies }: { strategies: StrategyData[] }) 
                   </thead>
                   <tbody>
                     {trades.map((trade, i) => {
-                      const pnlPct = ((trade.exit_price - trade.entry_price) / trade.entry_price) * 100;
+                      // Use absolute price move magnitude, sign from won
+                      // (bear breakdown shorts profit when price falls — raw price math gives wrong sign)
+                      const rawMove = Math.abs((trade.exit_price - trade.entry_price) / trade.entry_price) * 100;
+                      const pnlPct = trade.won ? rawMove : -rawMove;
                       return (
                         <tr key={i} className="border-b border-slate-800/30 hover:bg-slate-800/20">
                           <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{trade.entry_date}</td>
