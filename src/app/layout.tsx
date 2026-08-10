@@ -12,6 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://getpaperedge.com"),
   title: "PaperEdge — Practice Trading with Real Market Opportunities",
   description:
     "Discover real swing trading opportunities, paper trade them, and build your edge through experience. Learn by doing — not by following predictions.",

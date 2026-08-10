@@ -185,6 +185,7 @@ function OpenPositionsTable({ positions }: { positions: OpenPosition[] }) {
             <th className="text-left py-2 px-2">Ticker</th>
             <th className="text-left py-2 px-2">Strategy</th>
             <th className="text-right py-2 px-2">Entry</th>
+            <th className="text-right py-2 px-2">Target</th>
             <th className="text-right py-2 px-2">Current</th>
             <th className="text-right py-2 px-2">P&L</th>
             <th className="text-right py-2 px-2">Days</th>
@@ -205,6 +206,9 @@ function OpenPositionsTable({ positions }: { positions: OpenPosition[] }) {
               </td>
               <td className="py-2 px-2 text-right text-zinc-300">
                 ${pos.entry_price.toFixed(2)}
+              </td>
+              <td className="py-2 px-2 text-right text-zinc-300">
+                ${pos.target_price.toFixed(2)}
               </td>
               <td className="py-2 px-2 text-right text-zinc-300">
                 {pos.current_price != null
